@@ -25,3 +25,10 @@ module Http =
 
     let post (url: Uri) (data: byte[]) =
         async { return Error "Http.post not implemented." }
+
+module Bots =
+    module Telegram =
+        let sendMessage message ct =
+            async { return Error "Telegram.sendMessage not implemented." }
+        
+        let sendButtons 
