@@ -1,6 +1,7 @@
 ﻿module Web.Core
 
 open System
+open System.Threading
 open Infrastructure
 
 module Http =
@@ -28,7 +29,10 @@ module Http =
 
 module Bots =
     module Telegram =
-        let sendMessage message ct =
+        open Domain.Core.Bots.Telegram
+
+        let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
             async { return Error "Telegram.sendMessage not implemented." }
-        
-        let sendButtons 
+
+        let sendButtonsGroups (chatId: ChatId) (buttonsGroup: ButtonsGroup) (ct: CancellationToken) =
+            async { return Error "Telegram.sendButtonGroups not implemented." }
