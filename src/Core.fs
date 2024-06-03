@@ -29,7 +29,7 @@ module Http =
 
 module Bots =
     module Telegram =
-        open Domain.Core.Bots.Telegram
+        open Domain.Internal.Bots.Telegram
 
         let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
             async { return Error "Telegram.sendMessage not implemented." }

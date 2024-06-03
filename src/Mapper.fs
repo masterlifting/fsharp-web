@@ -4,12 +4,12 @@ open Infrastructure.DSL.ActivePatterns
 
 module Bots =
     module Telegram =
-        let toCoreMessage (message: Domain.Source.Bots.Telegram.Text) : Domain.Core.Bots.Telegram.Text =
+        let toCoreMessage (message: Domain.External.Bots.Telegram.Text) : Domain.Internal.Bots.Telegram.Text =
             { Id = message.Id |> Option.ofNullable
               ChatId = message.ChatId
               Value = message.Value }
 
-        let toSourceMessage (message: Domain.Core.Bots.Telegram.Text) : Domain.Source.Bots.Telegram.Text =
+        let toSourceMessage (message: Domain.Internal.Bots.Telegram.Text) : Domain.External.Bots.Telegram.Text =
             { Id = message.Id |> Option.toNullable
               ChatId = message.ChatId
               Value = message.Value }

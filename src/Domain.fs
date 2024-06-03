@@ -2,7 +2,7 @@ module Web.Domain
 
 open System
 
-module Core =
+module Internal =
     module Bots =
         module Telegram =
 
@@ -20,7 +20,7 @@ module Core =
                   Buttons: Button seq
                   Cloumns: int }
 
-module Source =
+module External =
     module Bots =
         module Telegram =
             type Text = { Id: Nullable<int>; Value: string }
