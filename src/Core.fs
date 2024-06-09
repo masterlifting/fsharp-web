@@ -23,10 +23,10 @@ module Http =
             |> Result.map Map
 
     let get (url: Uri) =
-        async { return Error <| NotImplemented }
+        async { return Error <| NotImplemented "Web.Core.Http.get not implemented." }
 
     let post (url: Uri) (data: byte[]) =
-        async { return Error <| NotImplemented}
+        async { return Error <| NotImplemented "Web.Core.Http.post not implemented." }
 
 module Bots =
     module Telegram =
