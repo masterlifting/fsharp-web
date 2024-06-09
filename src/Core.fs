@@ -3,6 +3,7 @@
 open System
 open System.Threading
 open Infrastructure
+open Infrastructure.Domain.Errors
 
 module Http =
     module Mapper =
@@ -10,22 +11,22 @@ module Http =
             try
                 Ok <| Uri url
             with ex ->
-                Error ex.Message
+                Error <| Parsing ex.Message
 
         let toQueryParams (uri: Uri) =
             uri.Query.Split('&')
             |> Array.map (fun parameter ->
                 match parameter.Split('=') with
                 | parts when parts.Length = 2 -> Ok(parts.[0], parts.[1])
-                | _ -> Error $"Invalid query parameter of '{parameter}'.")
+                | _ -> Error <| Parsing $"Invalid query parameter of '{parameter}'.")
             |> DSL.Seq.resultOrError
             |> Result.map Map
 
     let get (url: Uri) =
-        async { return Error "Http.get not implemented." }
+        async { return Error <| NotImplemented }
 
     let post (url: Uri) (data: byte[]) =
-        async { return Error "Http.post not implemented." }
+        async { return Error <| NotImplemented}
 
 module Bots =
     module Telegram =
