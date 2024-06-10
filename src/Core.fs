@@ -14,11 +14,12 @@ module Http =
                 Error <| Parsing ex.Message
 
         let toQueryParams (uri: Uri) =
-            uri.Query.Split('&')
+            let query = uri.Query.TrimStart('?')
+            query.Split('&')
             |> Array.map (fun parameter ->
                 match parameter.Split('=') with
                 | parts when parts.Length = 2 -> Ok(parts.[0], parts.[1])
-                | _ -> Error <| Parsing $"Invalid query parameter of '{parameter}'.")
+                | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
             |> DSL.Seq.resultOrError
             |> Result.map Map
 
