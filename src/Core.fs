@@ -15,6 +15,7 @@ module Http =
 
         let toQueryParams (uri: Uri) =
             let query = uri.Query.TrimStart('?')
+
             query.Split('&')
             |> Array.map (fun parameter ->
                 match parameter.Split('=') with
@@ -23,11 +24,15 @@ module Http =
             |> DSL.Seq.resultOrError
             |> Result.map Map
 
-    let get (url: Uri) =
-        async { return Error <| NotImplemented "Web.Core.Http.get not implemented." }
+    open Mapper
 
-    let post (url: Uri) (data: byte[]) =
-        async { return Error <| NotImplemented "Web.Core.Http.post not implemented." }
+    let get (url: string) =
+        toUri url
+        |> Result.map (fun uri -> Error <| NotImplemented "Web.Core.Http.get not implemented.")
+
+    let post (url: string) (data: byte[]) =
+        toUri url
+        |> Result.map (fun uri -> Error <| NotImplemented "Web.Core.Http.post not implemented.")
 
 module Bots =
     module Telegram =
