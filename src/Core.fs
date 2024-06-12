@@ -21,7 +21,7 @@ module Http =
                 match parameter.Split('=') with
                 | parts when parts.Length = 2 -> Ok(parts.[0], parts.[1])
                 | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
-            |> DSL.Seq.resultOrError
+            |> Dsl.Seq.roe
             |> Result.map Map
 
     open Mapper

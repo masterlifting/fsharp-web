@@ -1,6 +1,6 @@
 module Web.Mapper
 
-open Infrastructure.DSL.ActivePatterns
+open Infrastructure.Dsl.ActivePatterns
 
 // module Bots =
 //     module Telegram =
