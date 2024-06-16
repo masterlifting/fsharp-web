@@ -6,6 +6,7 @@ open Infrastructure
 open Infrastructure.Domain.Errors
 
 module Http =
+    
     module Mapper =
         let toUri (url: string) =
             try
@@ -26,9 +27,13 @@ module Http =
 
     open Mapper
 
+    let private get url =
+        let httpClient = new HttpClient()
+
     let get (url: string) =
         toUri url
-        |> Result.map (fun uri -> Error <| NotImplemented "Web.Core.Http.get not implemented.")
+        |> Result.mapError Infrastructure
+        |> Result.bind (fun uri -> Error(Logical(NotImplemented "Web.Core.Http.get not implemented.")))
 
     let post (url: string) (data: byte[]) =
         toUri url
