@@ -1,50 +1,9 @@
 ﻿module Web.Core
 
-open System
-open System.Threading
 open Infrastructure
-open Infrastructure.Domain.Errors
+open Domain
 
-module Http =
-    
-    module Mapper =
-        let toUri (url: string) =
-            try
-                Ok <| Uri url
-            with ex ->
-                Error <| Parsing ex.Message
-
-        let toQueryParams (uri: Uri) =
-            let query = uri.Query.TrimStart('?')
-
-            query.Split('&')
-            |> Array.map (fun parameter ->
-                match parameter.Split('=') with
-                | parts when parts.Length = 2 -> Ok(parts.[0], parts.[1])
-                | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
-            |> Dsl.Seq.roe
-            |> Result.map Map
-
-    open Mapper
-
-    let private get url =
-        let httpClient = new HttpClient()
-
-    let get (url: string) =
-        toUri url
-        |> Result.mapError Infrastructure
-        |> Result.bind (fun uri -> Error(Logical(NotImplemented "Web.Core.Http.get not implemented.")))
-
-    let post (url: string) (data: byte[]) =
-        toUri url
-        |> Result.map (fun uri -> Error <| NotImplemented "Web.Core.Http.post not implemented.")
-
-module Bots =
-    module Telegram =
-        open Domain.Internal.Bots.Telegram
-
-        let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
-            async { return Error "Telegram.sendMessage not implemented." }
-
-        let sendButtonsGroups (chatId: ChatId) (buttonsGroup: ButtonsGroup) (ct: CancellationToken) =
-            async { return Error "Telegram.sendButtonGroups not implemented." }
+let createClient ``type`` =
+    match ``type`` with
+    | Http baseUrl -> Http.create baseUrl |> Result.map HttpClient
+    | Telegram config -> Telegram.create config |> Result.map TelegramClient
