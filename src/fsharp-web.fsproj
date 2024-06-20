@@ -8,8 +8,12 @@
     <Compile Include="clients\Http.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Core.fs" />
+    <Compile Include="parsers\Html.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\fsharp-infrastructure\src\fsharp-infrastructure.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
   </ItemGroup>
 </Project>

@@ -39,7 +39,7 @@ module Domain =
 type Client = WebClient
 open Domain
 
-let internal create (token: string) : Result<Client, ApiError> =
+let create (token: string) : Result<Client, ApiError> =
     Error(Logical(NotImplemented "Web.Telegram.create"))
 
 let sendText (chatId: Internal.ChatId) (text: Internal.Text) (ct: CancellationToken) =

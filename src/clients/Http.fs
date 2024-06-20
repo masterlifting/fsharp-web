@@ -33,7 +33,7 @@ let toQueryParams (uri: Uri) =
     |> Dsl.Seq.roe
     |> Result.map Map
 
-let internal create (baseUrl: string) =
+let create (baseUrl: string) =
     baseUrl
     |> toUri
     |> Result.mapError Infrastructure
