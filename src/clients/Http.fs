@@ -1,10 +1,20 @@
 module Web.Http
 
 open System
+open System.Threading
 open Infrastructure
 open Infrastructure.Domain.Errors
 
 type Client = Net.Http.HttpClient
+
+module Domain =
+    type Headers = Map<string, string> option
+
+    type Request =
+        | Get of string * Headers
+        | Post of string * byte[] * Headers
+
+    type Response = string * Headers
 
 let toUri (url: string) =
     try
@@ -32,32 +42,48 @@ let internal create (baseUrl: string) =
         client.BaseAddress <- uri
         client)
 
-let get (client: Client) (path: string) =
+open Domain
+
+let get (client: Client) (path: string) (headers: Headers) (ct: CancellationToken) =
     async {
         try
-            let! response = client.GetAsync(path) |> Async.AwaitTask
+            let! response = client.GetAsync(path, ct) |> Async.AwaitTask
 
             match response.IsSuccessStatusCode with
             | true ->
-                let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-                return Ok content
+                let! content = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
+
+                let headers =
+                    response.Headers
+                    |> Option.ofObj
+                    |> Option.map (fun headers -> Map<string, string> [])
+
+                return Ok <| Response(content, headers)
             | false -> return Error(Infrastructure(InvalidResponse response.ReasonPhrase))
 
         with ex ->
             return Error(Infrastructure(InvalidRequest ex.Message))
     }
 
-let post (client: Client) (path: string) (data: byte[]) =
+let post (client: Client) (path: string) (data: byte[]) (headers: Headers) (ct: CancellationToken) =
     async {
         try
-            let! response = client.PostAsync(path, new Net.Http.ByteArrayContent(data)) |> Async.AwaitTask
+            let! response =
+                client.PostAsync(path, new Net.Http.ByteArrayContent(data), ct)
+                |> Async.AwaitTask
 
             match response.IsSuccessStatusCode with
             | true ->
-                let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-                return Ok content
-            | false -> return Error <| InvalidResponse response.ReasonPhrase
+                let! content = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
+
+                let headers =
+                    response.Headers
+                    |> Option.ofObj
+                    |> Option.map (fun headers -> Map<string, string> [])
+
+                return Ok <| Response(content, headers)
+            | false -> return Error(Infrastructure(InvalidResponse response.ReasonPhrase))
 
         with ex ->
-            return Error <| InvalidRequest ex.Message
+            return Error(Infrastructure(InvalidRequest ex.Message))
     }

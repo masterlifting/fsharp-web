@@ -5,5 +5,5 @@ open Domain
 
 let createClient ``type`` =
     match ``type`` with
-    | Http baseUrl -> Http.create baseUrl |> Result.map HttpClient
-    | Telegram config -> Telegram.create config |> Result.map TelegramClient
+    | Type.Http baseUrl -> Http.create baseUrl |> Result.map HttpClient
+    | Type.Telegram token -> Telegram.create token |> Result.map TelegramClient

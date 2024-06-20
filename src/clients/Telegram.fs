@@ -22,6 +22,14 @@ module Domain =
               Buttons: Button seq
               Cloumns: int }
 
+        type Request =
+            | Message of ChatId * Text
+            | Buttons of ChatId * ButtonsGroup
+
+        type Response =
+            | Message of Text
+            | Buttons of ButtonsGroup
+
     module External =
         open System
 
@@ -35,7 +43,7 @@ let internal create (token: string) : Result<Client, ApiError> =
     Error(Logical(NotImplemented "Web.Telegram.create"))
 
 let sendText (chatId: Internal.ChatId) (text: Internal.Text) (ct: CancellationToken) =
-    async { return Error "Telegram.sendMessage not implemented." }
+    async { return Error(Logical(NotImplemented "Telegram.sendText.")) }
 
 let sendButtonsGroups (chatId: Internal.ChatId) (buttonsGroup: Internal.ButtonsGroup) (ct: CancellationToken) =
     async { return Error "Telegram.sendButtonGroups not implemented." }
