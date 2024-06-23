@@ -44,28 +44,57 @@ let create (baseUrl: string) =
 
 open Domain
 
-let get (client: Client) (path: string) (headers: Headers) (ct: CancellationToken) =
+let private addHeaders (headers: Headers) (client: Client) =
+    match headers with
+    | Some headers ->
+        headers
+        |> Map.iter (fun key value -> client.DefaultRequestHeaders.Add(key, value))
+    | None -> ()
+
+let private getHeaders (response: Net.Http.HttpResponseMessage) =
+    try
+        response.Headers
+        |> Seq.map (fun header -> header.Key, header.Value |> Seq.head)
+        |> Map
+        |> Some
+    with _ ->
+        None
+
+let getString (path: string) (headers: Headers) (ct: CancellationToken) (client: Client) =
     async {
         try
+            client |> addHeaders headers
             let! response = client.GetAsync(path, ct) |> Async.AwaitTask
 
             match response.IsSuccessStatusCode with
             | true ->
                 let! content = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
-
-                let headers =
-                    response.Headers
-                    |> Option.ofObj
-                    |> Option.map (fun headers -> Map<string, string> [])
-
-                return Ok <| Response(content, headers)
+                let headers = response |> getHeaders
+                return Ok <| (content, headers)
             | false -> return Error(Infrastructure(InvalidResponse response.ReasonPhrase))
 
         with ex ->
             return Error(Infrastructure(InvalidRequest ex.Message))
     }
 
-let post (client: Client) (path: string) (data: byte[]) (headers: Headers) (ct: CancellationToken) =
+let getBytes (path: string) (headers: Headers) (ct: CancellationToken) (client: Client) =
+    async {
+        try
+            client |> addHeaders headers
+            let! response = client.GetAsync(path, ct) |> Async.AwaitTask
+
+            match response.IsSuccessStatusCode with
+            | true ->
+                let! content = response.Content.ReadAsByteArrayAsync(ct) |> Async.AwaitTask
+                let headers = response |> getHeaders
+                return Ok <| (content, headers)
+            | false -> return Error(Infrastructure(InvalidResponse response.ReasonPhrase))
+
+        with ex ->
+            return Error(Infrastructure(InvalidRequest ex.Message))
+    }
+
+let post (path: string) (data: byte[]) (headers: Headers) (ct: CancellationToken) (client: Client) =
     async {
         try
             let! response =
