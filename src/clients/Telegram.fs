@@ -39,11 +39,11 @@ module Domain =
 type Client = WebClient
 open Domain
 
-let create (token: string) : Result<Client, ApiError> =
-    Error(Logical(NotImplemented "Web.Telegram.create"))
+let create (token: string) : Result<Client, ErrorType> =
+    Error(LogicalError(NotImplementedError "Web.Telegram.create"))
 
 let sendText (chatId: Internal.ChatId) (text: Internal.Text) (ct: CancellationToken) =
-    async { return Error(Logical(NotImplemented "Telegram.sendText.")) }
+    async { return Error(LogicalError(NotImplementedError "Telegram.sendText.")) }
 
 let sendButtonsGroups (chatId: Internal.ChatId) (buttonsGroup: Internal.ButtonsGroup) (ct: CancellationToken) =
     async { return Error "Telegram.sendButtonGroups not implemented." }

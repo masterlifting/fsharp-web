@@ -20,7 +20,7 @@ let toUri (url: string) =
     try
         Ok <| Uri url
     with ex ->
-        Error <| Parsing ex.Message
+        Error <| ParsingError ex.Message
 
 let toQueryParams (uri: Uri) =
     let query = uri.Query.TrimStart('?')
@@ -29,18 +29,9 @@ let toQueryParams (uri: Uri) =
     |> Array.map (fun parameter ->
         match parameter.Split('=') with
         | parts when parts.Length = 2 -> Ok(parts.[0], parts.[1])
-        | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
+        | _ -> Error <| ParsingError $"Invalid query parameter '{parameter}' in '{uri}'")
     |> Dsl.Seq.roe
     |> Result.map Map
-
-let create (baseUrl: string) =
-    baseUrl
-    |> toUri
-    |> Result.mapError Infrastructure
-    |> Result.map (fun uri ->
-        let client = new Client()
-        client.BaseAddress <- uri
-        client)
 
 open Domain
 
@@ -60,6 +51,19 @@ let private getHeaders (response: Net.Http.HttpResponseMessage) =
     with _ ->
         None
 
+
+module Client =
+
+    let create (baseUrl: string) (headers: Headers) =
+        baseUrl
+        |> toUri
+        |> Result.mapError InfrastructureError
+        |> Result.map (fun uri ->
+            let client = new Client()
+            client.BaseAddress <- uri
+            client |> addHeaders headers
+            client)
+
 let getString (path: string) (headers: Headers) (ct: CancellationToken) (client: Client) =
     async {
         try
@@ -71,10 +75,10 @@ let getString (path: string) (headers: Headers) (ct: CancellationToken) (client:
                 let! content = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
                 let headers = response |> getHeaders
                 return Ok <| (content, headers)
-            | false -> return Error(Infrastructure(InvalidResponse response.ReasonPhrase))
+            | false -> return Error(InfrastructureError(InvalidResponse response.ReasonPhrase))
 
         with ex ->
-            return Error(Infrastructure(InvalidRequest ex.Message))
+            return Error(InfrastructureError(WebError ex.Message))
     }
 
 let getBytes (path: string) (headers: Headers) (ct: CancellationToken) (client: Client) =
@@ -88,10 +92,10 @@ let getBytes (path: string) (headers: Headers) (ct: CancellationToken) (client: 
                 let! content = response.Content.ReadAsByteArrayAsync(ct) |> Async.AwaitTask
                 let headers = response |> getHeaders
                 return Ok <| (content, headers)
-            | false -> return Error(Infrastructure(InvalidResponse response.ReasonPhrase))
+            | false -> return Error(InfrastructureError(InvalidResponse response.ReasonPhrase))
 
         with ex ->
-            return Error(Infrastructure(InvalidRequest ex.Message))
+            return Error(InfrastructureError(WebError ex.Message))
     }
 
 let post (path: string) (data: byte[]) (headers: Headers) (ct: CancellationToken) (client: Client) =
@@ -111,8 +115,8 @@ let post (path: string) (data: byte[]) (headers: Headers) (ct: CancellationToken
                     |> Option.map (fun headers -> Map<string, string> [])
 
                 return Ok <| Response(content, headers)
-            | false -> return Error(Infrastructure(InvalidResponse response.ReasonPhrase))
+            | false -> return Error(InfrastructureError(InvalidResponse response.ReasonPhrase))
 
         with ex ->
-            return Error(Infrastructure(InvalidRequest ex.Message))
+            return Error(InfrastructureError(WebError ex.Message))
     }
