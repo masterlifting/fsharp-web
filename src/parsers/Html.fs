@@ -8,6 +8,6 @@ let load (html: string) =
         document.LoadHtml html
         Ok document
     with ex ->
-        Error <| ParsingError ex.Message
+        Error <| Parsing ex.Message
         
 
