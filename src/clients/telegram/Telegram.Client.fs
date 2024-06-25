@@ -5,7 +5,7 @@ open Infrastructure.Domain.Errors
 open Web.Domain.Telegram.Internal
 
 
-let create (token: string) : Result<Client, ErrorType> =
+let create (token: string) : Result<Client, Error'> =
     Error <| NotImplemented "Web.Telegram.create"
 
 let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
