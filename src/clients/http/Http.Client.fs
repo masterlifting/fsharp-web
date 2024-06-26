@@ -1,8 +1,10 @@
 module Web.Client.Http
 
 open System
+open System.Net.Http
 open System.Threading
 open Infrastructure
+open Infrastructure.Dsl
 open Infrastructure.Domain.Errors
 open Web.Domain.Http
 
@@ -30,7 +32,7 @@ let private addHeaders (headers: Headers) (client: Client) =
         |> Map.iter (fun key value -> client.DefaultRequestHeaders.Add(key, value))
     | None -> ()
 
-let private getHeaders (response: Net.Http.HttpResponseMessage) =
+let private getHeaders (response: HttpResponseMessage) : Headers =
     try
         response.Headers
         |> Seq.map (fun header -> header.Key, header.Value |> Seq.head)
@@ -49,59 +51,218 @@ let create (baseUrl: string) (headers: Headers) =
         client |> addHeaders headers
         client)
 
-let getString (path: string) (headers: Headers) (ct: CancellationToken) (client: Client) =
-    async {
-        try
-            client |> addHeaders headers
-            let! response = client.GetAsync(path, ct) |> Async.AwaitTask
+let private getRequest getContent =
+    fun (request: Request) (ct: CancellationToken) (client: Client) ->
+        async {
+            try
+                client |> addHeaders request.Headers
+                let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
 
-            match response.IsSuccessStatusCode with
-            | true ->
-                let! content = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
-                let headers = response |> getHeaders
-                return Ok <| (content, headers)
-            | false -> return Error <| Web response.ReasonPhrase
+                match response.IsSuccessStatusCode with
+                | true ->
+                    let! content = getContent response |> Async.AwaitTask
+                    let headers = response |> getHeaders 
+                    return Ok <| (content, headers)
+                | false ->
+                    return
+                        Error
+                        <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
 
-        with ex ->
-            return Error <| Web ex.Message
-    }
+            with ex ->
+                return Error <| Web ex.Message
+        }
 
-let getBytes (path: string) (headers: Headers) (ct: CancellationToken) (client: Client) =
-    async {
-        try
-            client |> addHeaders headers
-            let! response = client.GetAsync(path, ct) |> Async.AwaitTask
+/// <summary>
+/// Get request with monadic response of string.
+/// </summary>
+/// <param name="request"> The request data. </param>
+/// <param name="ct"> The cancellation token. </param>
+/// <param name="client"> The Http client. </param>
+let get request ct client =
+    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
 
-            match response.IsSuccessStatusCode with
-            | true ->
-                let! content = response.Content.ReadAsByteArrayAsync(ct) |> Async.AwaitTask
-                let headers = response |> getHeaders
-                return Ok <| (content, headers)
-            | false -> return Error <| Web response.ReasonPhrase
+    let get = getRequest getContent
+    client |> get request ct
 
-        with ex ->
-            return Error <| Web ex.Message
-    }
+/// <summary>
+/// Get request with monadic response of byte array.
+/// </summary>
+/// <param name="request"> The request data. </param>
+/// <param name="ct"> The cancellation token. </param>
+/// <param name="client"> The Http client. </param>
+let get' request ct client =
+    let getContent (response: HttpResponseMessage) =
+        response.Content.ReadAsByteArrayAsync(ct)
 
-let post (path: string) (data: byte[]) (headers: Headers) (ct: CancellationToken) (client: Client) =
-    async {
-        try
-            let! response =
-                client.PostAsync(path, new Net.Http.ByteArrayContent(data), ct)
-                |> Async.AwaitTask
+    let get = getRequest getContent
+    client |> get request ct
 
-            match response.IsSuccessStatusCode with
-            | true ->
-                let! content = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
+/// <summary>
+/// Get request with monadic response of stream.
+/// </summary>
+/// <param name="request"> The request data. </param>
+/// <param name="ct"> The cancellation token. </param>
+/// <param name="client"> The Http client. </param>
+let get'' request ct client =
+    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
 
-                let headers =
-                    response.Headers
-                    |> Option.ofObj
-                    |> Option.map (fun headers -> Map<string, string> [])
+    let get = getRequest getContent
+    client |> get request ct
 
-                return Ok <| Response(content, headers)
-            | false -> return Error <| Web response.ReasonPhrase
+let private postRequest getContent =
+    fun (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) ->
+        async {
+            try
+                client |> addHeaders request.Headers
 
-        with ex ->
-            return Error <| Web ex.Message
-    }
+                let content =
+                    match content with
+                    | Bytes data -> new ByteArrayContent(data)
+                    | String data -> new StringContent(data.Content, data.Encoding, data.MediaType)
+
+                let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
+
+                match response.IsSuccessStatusCode with
+                | true ->
+                    let! content = getContent response |> Async.AwaitTask
+                    let headers = response |> getHeaders
+                    return Ok <| (content, headers)
+                | false ->
+                    return
+                        Error
+                        <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+
+            with ex ->
+                return Error <| Web ex.Message
+        }
+
+/// <summary>
+/// Post request with monadic response of string.
+/// </summary>
+/// <param name="request"> The request data. </param>
+/// <param name="content"> The request content. </param>
+/// <param name="ct"> The cancellation token. </param>
+/// <param name="client"> The Http client. </param>
+let post request content ct client =
+    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
+
+    let post = postRequest getContent
+    client |> post request content ct
+
+/// <summary>
+/// Post request with monadic response of byte array.
+/// </summary>
+/// <param name="request"> The request data. </param>
+/// <param name="content"> The request content. </param>
+/// <param name="ct"> The cancellation token. </param>
+/// <param name="client"> The Http client. </param>
+let post' request content ct client =
+    let getContent (response: HttpResponseMessage) =
+        response.Content.ReadAsByteArrayAsync(ct)
+
+    let post = postRequest getContent
+    client |> post request content ct
+
+/// <summary>
+/// Post request with monadic response of stream.
+/// </summary>
+/// <param name="request"> The request data. </param>
+/// <param name="content"> The request content. </param>
+/// <param name="ct"> The cancellation token. </param>
+/// <param name="client"> The Http client. </param>
+let post'' request content ct client =
+    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
+
+    let post = postRequest getContent
+    client |> post request content ct
+    
+module Captcha =
+    module AntiCaptcha =
+        open Infrastructure.Dsl.SerDe
+        open Infrastructure.Dsl.ActivePatterns
+        let solveInt image ct =
+            create "https://api.anti-captcha.com" None
+            |> ResultAsync.wrap (fun client ->
+                async {
+                    match Configuration.getEnvVar "AntiCaptchaApiKey" with
+                    | Error error -> return Error error
+                    | Ok None -> return Error <| Configuration "No AntiCaptcha key found in environment variables."
+                    | Ok(Some key) ->
+                        let data =
+                            $@"
+                                {{
+                                    ""clientKey"": ""{key}"",
+                                    ""task"": {{
+                                        ""type"": ""ImageToTextTask"",
+                                        ""body"": ""{image |> Convert.ToBase64String}"",
+                                        ""phrase"": false,
+                                        ""case"": false,
+                                        ""numeric"": 0,
+                                        ""math"": 0,
+                                        ""minLength"": 0,
+                                        ""maxLength"": 0
+                                    }}
+                                }}"
+
+                        let request = { Path = "/createTask"; Headers = None }
+
+                        let content =
+                            String
+                                {| Content = data
+                                   Encoding = Text.Encoding.UTF8
+                                   MediaType = "application/json" |}
+
+                        match! client |> post request content ct with
+                        | Error error -> return Error error
+                        | Ok(content, _) ->
+                            match content |> Json.deserialize'<{| ErrorId: int; TaskId: int |}> Json.WebApi with
+                            | Error error -> return Error error
+                            | Ok task ->
+                                let data =
+                                    $@"
+                                        {{
+                                            ""clientKey"":""{key}"",
+                                            ""taskId"":""{task.TaskId}""
+                                        }}"
+
+                                let request =
+                                    { Path = "/getTaskResult"
+                                      Headers = None }
+
+                                let content =
+                                    String
+                                        {| Content = data
+                                           Encoding = Text.Encoding.UTF8
+                                           MediaType = "application/json" |}
+
+                                let rec solve attempts =
+                                    async {
+                                        match attempts with
+                                        | 0 -> return Error <| Web "Failed to solve captcha."
+                                        | _ ->
+                                            match! client |> post request content ct with
+                                            | Error error -> return Error error
+                                            | Ok(content, _) ->
+                                                match
+                                                    content
+                                                    |> Json.deserialize'<
+                                                        {| Status: string
+                                                           Solution: {| Text: string |} |}
+                                                        >
+                                                        Json.WebApi
+                                                with
+                                                | Error error -> return Error error
+                                                | Ok result ->
+                                                    match result.Status with
+                                                    | "processing" ->
+                                                        do! Async.Sleep 500
+                                                        return! solve (attempts - 1)
+                                                    | "ready" ->
+                                                        match result.Solution.Text with
+                                                        | IsInt result -> return Ok result
+                                                        | _ -> return Error <| Web "Failed to solve captcha."
+                                                    | _ -> return Error <| Web "Failed to solve captcha."
+                                    }
+
+                                return! solve 10
+                })

@@ -7,9 +7,11 @@ type Client = Net.Http.HttpClient
 
 type Headers = Map<string, string> option
 
-type Request =
-    | Get of string * Headers
-    | Post of string * byte[] * Headers
+type Request = { Path: string; Headers: Headers }
 
-type Response = string * Headers
-
+type RequestContent =
+    | Bytes of byte[]
+    | String of
+        {| Content: string
+           Encoding: Text.Encoding
+           MediaType: string |}
