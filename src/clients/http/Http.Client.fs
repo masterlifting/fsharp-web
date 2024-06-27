@@ -238,7 +238,7 @@ module Captcha =
                                 let rec solve attempts =
                                     async {
                                         match attempts with
-                                        | 0 -> return Error <| Web "Failed to solve captcha."
+                                        | 0 -> return Error <| Web "Failed to solve captcha. No attempts left."
                                         | _ ->
                                             match! client |> post request content ct with
                                             | Error error -> return Error error
@@ -255,13 +255,16 @@ module Captcha =
                                                 | Ok result ->
                                                     match result.Status with
                                                     | "processing" ->
-                                                        do! Async.Sleep 500
-                                                        return! solve (attempts - 1)
+                                                        if ct |> Threading.notCanceled then
+                                                            do! Async.Sleep 500
+                                                            return! solve (attempts - 1)
+                                                        else
+                                                            return Error <| Web "Captcha solving was canceled."
                                                     | "ready" ->
                                                         match result.Solution.Text with
                                                         | IsInt result -> return Ok result
-                                                        | _ -> return Error <| Web "Failed to solve captcha."
-                                                    | _ -> return Error <| Web "Failed to solve captcha."
+                                                        | _ -> return Error <| Web $"Failed to solve captcha. Solution is not an integer: '{result.Solution.Text}'."
+                                                    | _ -> return Error <| Web "Failed to solve captcha. Status is not 'processing' or 'ready'."
                                     }
 
                                 return! solve 10
