@@ -12,6 +12,6 @@ type Request = { Path: string; Headers: Headers }
 type RequestContent =
     | Bytes of byte[]
     | String of
-        {| Content: string
+        {| Data: string
            Encoding: Text.Encoding
            MediaType: string |}
