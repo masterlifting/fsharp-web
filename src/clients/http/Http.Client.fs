@@ -20,9 +20,9 @@ let toQueryParams (uri: Uri) =
     query.Split('&')
     |> Array.map (fun parameter ->
         match parameter.Split('=') with
-        | parts when parts.Length = 2 -> Ok(parts.[0], parts.[1])
+        | parts when parts.Length = 2 -> Ok(parts[0], parts[1])
         | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
-    |> Dsl.Seq.roe
+    |> Seq.roe
     |> Result.map Map
 
 let private addHeaders (headers: Headers) (client: Client) =
@@ -41,7 +41,6 @@ let private getHeaders (response: HttpResponseMessage) : Headers =
     with _ ->
         None
 
-
 let create (baseUrl: string) (headers: Headers) =
     baseUrl
     |> toUri
@@ -51,130 +50,288 @@ let create (baseUrl: string) (headers: Headers) =
         client |> addHeaders headers
         client)
 
-let private getRequest getContent =
-    fun (request: Request) (ct: CancellationToken) (client: Client) ->
-        async {
-            try
-                client |> addHeaders request.Headers
-                let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
+module Request =
+    module Get =
+        let private create' getContent =
+            fun (request: Request) (ct: CancellationToken) (client: Client) ->
+                async {
+                    try
+                        client |> addHeaders request.Headers
+                        let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
 
-                match response.IsSuccessStatusCode with
-                | true ->
-                    let! content = getContent response |> Async.AwaitTask
-                    let headers = response |> getHeaders
-                    return Ok <| (content, headers)
-                | false ->
-                    return
-                        Error
-                        <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+                        match response.IsSuccessStatusCode with
+                        | true ->
+                            let! content = getContent response |> Async.AwaitTask
+                            let headers = response |> getHeaders
+                            return Ok <| (content, headers)
+                        | false ->
+                            return
+                                Error
+                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
 
-            with ex ->
-                return Error <| Web ex.Message
-        }
+                    with ex ->
+                        return Error <| Web ex.Message
+                }
 
-/// <summary>
-/// Get request with monadic response of string.
-/// </summary>
-/// <param name="request"> The request data. </param>
-/// <param name="ct"> The cancellation token. </param>
-/// <param name="client"> The Http client. </param>
-let get request ct client =
-    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
+        let private create getContent =
+            fun (request: Request) (ct: CancellationToken) (client: Client) ->
+                async {
+                    try
+                        client |> addHeaders request.Headers
+                        let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
 
-    let get = getRequest getContent
-    client |> get request ct
+                        match response.IsSuccessStatusCode with
+                        | true ->
+                            let! content = getContent response |> Async.AwaitTask
+                            return Ok <| content
+                        | false ->
+                            return
+                                Error
+                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
 
-/// <summary>
-/// Get request with monadic response of byte array.
-/// </summary>
-/// <param name="request"> The request data. </param>
-/// <param name="ct"> The cancellation token. </param>
-/// <param name="client"> The Http client. </param>
-let get' request ct client =
-    let getContent (response: HttpResponseMessage) =
-        response.Content.ReadAsByteArrayAsync(ct)
+                    with ex ->
+                        return Error <| Web ex.Message
+                }
 
-    let get = getRequest getContent
-    client |> get request ct
+        /// <summary>
+        /// Get request with monadic response of string.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let string request ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
 
-/// <summary>
-/// Get request with monadic response of stream.
-/// </summary>
-/// <param name="request"> The request data. </param>
-/// <param name="ct"> The cancellation token. </param>
-/// <param name="client"> The Http client. </param>
-let get'' request ct client =
-    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
+            let get = create getContent
+            client |> get request ct
 
-    let get = getRequest getContent
-    client |> get request ct
+        /// <summary>
+        /// Get request with monadic response of string and headers.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let string' request ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
 
-let private postRequest getContent =
-    fun (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) ->
-        async {
-            try
-                client |> addHeaders request.Headers
+            let get = create' getContent
+            client |> get request ct
 
-                let content =
-                    match content with
-                    | Bytes data -> new ByteArrayContent(data)
-                    | String data -> new StringContent(data.Data, data.Encoding, data.MediaType)
+        /// <summary>
+        /// Get request with monadic response of byte array.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let bytes request ct client =
+            let getContent (response: HttpResponseMessage) =
+                response.Content.ReadAsByteArrayAsync(ct)
 
-                let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
+            let get = create getContent
+            client |> get request ct
 
-                match response.IsSuccessStatusCode with
-                | true ->
-                    let! content = getContent response |> Async.AwaitTask
-                    let headers = response |> getHeaders
-                    return Ok <| (content, headers)
-                | false ->
-                    return
-                        Error
-                        <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+        /// <summary>
+        /// Get request with monadic response of byte array and headers.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let bytes' request ct client =
+            let getContent (response: HttpResponseMessage) =
+                response.Content.ReadAsByteArrayAsync(ct)
 
-            with ex ->
-                return Error <| Web ex.Message
-        }
+            let get = create' getContent
+            client |> get request ct
 
-/// <summary>
-/// Post request with monadic response of string.
-/// </summary>
-/// <param name="request"> The request data. </param>
-/// <param name="content"> The request content. </param>
-/// <param name="ct"> The cancellation token. </param>
-/// <param name="client"> The Http client. </param>
-let post request content ct client =
-    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
+        /// <summary>
+        /// Get request with monadic response of stream.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let stream request ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
 
-    let post = postRequest getContent
-    client |> post request content ct
+            let get = create getContent
+            client |> get request ct
 
-/// <summary>
-/// Post request with monadic response of byte array.
-/// </summary>
-/// <param name="request"> The request data. </param>
-/// <param name="content"> The request content. </param>
-/// <param name="ct"> The cancellation token. </param>
-/// <param name="client"> The Http client. </param>
-let post' request content ct client =
-    let getContent (response: HttpResponseMessage) =
-        response.Content.ReadAsByteArrayAsync(ct)
+        /// <summary>
+        /// Get request with monadic response of stream and headers.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let stream' request ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
 
-    let post = postRequest getContent
-    client |> post request content ct
+            let get = create' getContent
+            client |> get request ct
 
-/// <summary>
-/// Post request with monadic response of stream.
-/// </summary>
-/// <param name="request"> The request data. </param>
-/// <param name="content"> The request content. </param>
-/// <param name="ct"> The cancellation token. </param>
-/// <param name="client"> The Http client. </param>
-let post'' request content ct client =
-    let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
+    module Post =
+        let private create' getContent =
+            fun (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) ->
+                async {
+                    try
+                        client |> addHeaders request.Headers
 
-    let post = postRequest getContent
-    client |> post request content ct
+                        let content =
+                            match content with
+                            | Bytes data -> new ByteArrayContent(data)
+                            | String data -> new StringContent(data.Data, data.Encoding, data.MediaType)
+
+                        let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
+
+                        match response.IsSuccessStatusCode with
+                        | true ->
+                            let! content = getContent response |> Async.AwaitTask
+                            let headers = response |> getHeaders
+                            return Ok <| (content, headers)
+                        | false ->
+                            return
+                                Error
+                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+
+                    with ex ->
+                        return Error <| Web ex.Message
+                }
+
+        let private create getContent =
+            fun (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) ->
+                async {
+                    try
+                        client |> addHeaders request.Headers
+
+                        let content =
+                            match content with
+                            | Bytes data -> new ByteArrayContent(data)
+                            | String data -> new StringContent(data.Data, data.Encoding, data.MediaType)
+
+                        let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
+
+                        match response.IsSuccessStatusCode with
+                        | true ->
+                            let! content = getContent response |> Async.AwaitTask
+                            return Ok <| content
+                        | false ->
+                            return
+                                Error
+                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+
+                    with ex ->
+                        return Error <| Web ex.Message
+                }
+
+        /// <summary>
+        /// Post request with monadic response of string.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="content"> The request content. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let waitString request content ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
+
+            let post = create getContent
+            client |> post request content ct
+
+        let waitString' request content ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
+
+            let post = create' getContent
+            client |> post request content ct
+
+        /// <summary>
+        /// Post request with monadic response of byte array.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="content"> The request content. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let waitBytes request content ct client =
+            let getContent (response: HttpResponseMessage) =
+                response.Content.ReadAsByteArrayAsync(ct)
+
+            let post = create getContent
+            client |> post request content ct
+
+        /// <summary>
+        /// Post request with monadic response of byte array and headers.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="content"> The request content. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let waitBytes' request content ct client =
+            let getContent (response: HttpResponseMessage) =
+                response.Content.ReadAsByteArrayAsync(ct)
+
+            let post = create' getContent
+            client |> post request content ct
+
+        /// <summary>
+        /// Post request with monadic response of stream.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="content"> The request content. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let waitStream request content ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
+
+            let post = create getContent
+            client |> post request content ct
+
+        /// <summary>
+        /// Post request with monadic response of stream and headers.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="content"> The request content. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let waitStream' request content ct client =
+            let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
+
+            let post = create' getContent
+            client |> post request content ct
+
+        /// <summary>
+        /// Post request with monadic response of unit.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="content"> The request content. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let waitUnit request content ct client =
+            let getContent (_: HttpResponseMessage) =
+                async { return () } |> Async.StartAsTask
+
+            let post = create getContent
+            client |> post request content ct
+
+        /// <summary>
+        /// Post request with monadic response of unit and headers.
+        /// </summary>
+        /// <param name="request"> The request data. </param>
+        /// <param name="content"> The request content. </param>
+        /// <param name="ct"> The cancellation token. </param>
+        /// <param name="client"> The Http client. </param>
+        let waitUnit' request content ct client =
+            let getContent (_: HttpResponseMessage) =
+                async { return () } |> Async.StartAsTask
+
+            let post = create' getContent
+            client |> post request content ct
+
+module Response =
+    module Json =
+        open Infrastructure.Dsl.SerDe
+
+        let mapString<'a> (response: Async<Result<string, Error'>>) =
+            response |> ResultAsync.bind (Json.deserialize'<'a> Json.WebApi)
+
+        let mapString'<'a> (response: Async<Result<string * Headers, Error'>>) =
+            response
+            |> ResultAsync.bind (fun (content, _) -> content |> Json.deserialize'<'a> Json.WebApi)
 
 module Captcha =
     module AntiCaptcha =
@@ -183,30 +340,28 @@ module Captcha =
             type Solution = { Text: string }
             type TaskResult = { Status: string; Solution: Solution }
 
-        open Infrastructure.Dsl.SerDe
         open Infrastructure.Dsl.ActivePatterns
         open Infrastructure.Dsl.Threading
         open Domain
 
-        let private handleTaskResult solve attempts ct (result: TaskResult) =
+        let private handleTaskResult tryAgain attempts ct (result: TaskResult) =
             async {
                 match result.Status with
                 | "processing" ->
                     match ct |> notCanceled with
                     | true ->
                         do! Async.Sleep 500
-                        return! solve attempts
+                        return! tryAgain attempts
                     | _ -> return Error <| Cancelled "AntiCaptcha"
                 | "ready" ->
-                    match result.Solution.Text with
-                    | IsInt result -> return Ok result
-                    | _ ->
-                        let message = $"AntiCaptcha. Solution is not an integer: '{result.Solution.Text}'."
-                        return Error <| Parsing message
+                    return
+                        match result.Solution.Text with
+                        | IsInt result -> Ok result
+                        | _ -> Error <| Parsing $"AntiCaptcha. Is not an integer: '{result.Solution.Text}'."
                 | _ -> return Error <| Web "AntiCaptcha. Status is not 'processing' or 'ready'."
             }
 
-        let private handleTask client key ct task =
+        let private getTaskResult httpClient key ct task =
             let data =
                 $@"
                     {{
@@ -224,20 +379,18 @@ module Captcha =
                        Encoding = Text.Encoding.UTF8
                        MediaType = "application/json" |}
 
-            let rec solve attempts =
+            let rec innerLoop attempts =
                 match attempts with
                 | 0 -> async { return Error <| Web "AntiCaptcha. No attempts left." }
                 | _ ->
-                    client
-                    |> post request content ct
-                    |> ResultAsync.bind' (fun (content, _) ->
-                        content
-                        |> Json.deserialize'<TaskResult> Json.WebApi
-                        |> ResultAsync.wrap (handleTaskResult solve (attempts - 1) ct))
+                    httpClient
+                    |> Request.Post.waitString request content ct
+                    |> Response.Json.mapString
+                    |> ResultAsync.bind' (handleTaskResult innerLoop (attempts - 1) ct)
 
-            solve 10
+            innerLoop 10
 
-        let private handle client key ct image =
+        let private createTask httpClient key ct image =
             let data =
                 $@"
                     {{
@@ -262,19 +415,21 @@ module Captcha =
                        Encoding = Text.Encoding.UTF8
                        MediaType = "application/json" |}
 
-            client
-            |> post request content ct
-            |> ResultAsync.bind' (fun (content, _) ->
-                content
-                |> Json.deserialize'<Task> Json.WebApi
-                |> ResultAsync.wrap (handleTask client key ct))
+            httpClient
+            |> Request.Post.waitString request content ct
+            |> Response.Json.mapString
+            |> ResultAsync.bind' (getTaskResult httpClient key ct)
 
         let solveToInt ct image =
-            create "https://api.anti-captcha.com" None
-            |> ResultAsync.wrap (fun client ->
-                async {
-                    match Configuration.getEnvVar "AntiCaptchaApiKey" with
-                    | Error error -> return Error error
-                    | Ok None -> return Error <| Configuration "No AntiCaptcha key found in environment variables."
-                    | Ok(Some key) -> return! image |> handle client key ct
-                })
+            Configuration.getEnvVar "AntiCaptchaApiKey"
+            |> ResultAsync.wrap (fun keyOpt ->
+                match keyOpt with
+                | None -> async { return Error <| Configuration "AntiCaptcha. API Key not found." }
+                | Some key ->
+
+                    let createHttpClient url = create url None
+
+                    let createCaptchaTask =
+                        ResultAsync.wrap (fun httpClient -> image |> createTask httpClient key ct)
+
+                    createHttpClient "https://api.anti-captcha.com" |> createCaptchaTask)
