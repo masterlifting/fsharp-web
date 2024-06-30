@@ -99,7 +99,7 @@ module Request =
         /// <param name="request"> The request data. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let string request ct client =
+        let string ct request client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
 
             let get = create getContent
@@ -111,7 +111,7 @@ module Request =
         /// <param name="request"> The request data. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let string' request ct client =
+        let string' ct request client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
 
             let get = create' getContent
@@ -123,7 +123,7 @@ module Request =
         /// <param name="request"> The request data. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let bytes request ct client =
+        let bytes ct request client =
             let getContent (response: HttpResponseMessage) =
                 response.Content.ReadAsByteArrayAsync(ct)
 
@@ -136,7 +136,7 @@ module Request =
         /// <param name="request"> The request data. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let bytes' request ct client =
+        let bytes' ct request client =
             let getContent (response: HttpResponseMessage) =
                 response.Content.ReadAsByteArrayAsync(ct)
 
@@ -149,7 +149,7 @@ module Request =
         /// <param name="request"> The request data. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let stream request ct client =
+        let stream ct request client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
 
             let get = create getContent
@@ -161,7 +161,7 @@ module Request =
         /// <param name="request"> The request data. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let stream' request ct client =
+        let stream' ct request client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
 
             let get = create' getContent
@@ -228,13 +228,13 @@ module Request =
         /// <param name="content"> The request content. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let waitString request content ct client =
+        let waitString ct request content client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
 
             let post = create getContent
             client |> post request content ct
 
-        let waitString' request content ct client =
+        let waitString' ct request content client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStringAsync(ct)
 
             let post = create' getContent
@@ -247,7 +247,7 @@ module Request =
         /// <param name="content"> The request content. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let waitBytes request content ct client =
+        let waitBytes ct request content client =
             let getContent (response: HttpResponseMessage) =
                 response.Content.ReadAsByteArrayAsync(ct)
 
@@ -261,7 +261,7 @@ module Request =
         /// <param name="content"> The request content. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let waitBytes' request content ct client =
+        let waitBytes' ct request content client =
             let getContent (response: HttpResponseMessage) =
                 response.Content.ReadAsByteArrayAsync(ct)
 
@@ -275,7 +275,7 @@ module Request =
         /// <param name="content"> The request content. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let waitStream request content ct client =
+        let waitStream ct request content client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
 
             let post = create getContent
@@ -288,7 +288,7 @@ module Request =
         /// <param name="content"> The request content. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let waitStream' request content ct client =
+        let waitStream' ct request content client =
             let getContent (response: HttpResponseMessage) = response.Content.ReadAsStreamAsync()
 
             let post = create' getContent
@@ -301,7 +301,7 @@ module Request =
         /// <param name="content"> The request content. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let waitUnit request content ct client =
+        let waitUnit ct request content client =
             let getContent (_: HttpResponseMessage) =
                 async { return () } |> Async.StartAsTask
 
@@ -315,7 +315,7 @@ module Request =
         /// <param name="content"> The request content. </param>
         /// <param name="ct"> The cancellation token. </param>
         /// <param name="client"> The Http client. </param>
-        let waitUnit' request content ct client =
+        let waitUnit' ct request content client =
             let getContent (_: HttpResponseMessage) =
                 async { return () } |> Async.StartAsTask
 
