@@ -1,7 +1,6 @@
 module Web.Domain.Http
 
 open System
-open Infrastructure.Domain.Errors
 
 type Client = Net.Http.HttpClient
 
