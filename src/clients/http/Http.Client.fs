@@ -344,7 +344,7 @@ module Captcha =
         open Infrastructure.Dsl.Threading
         open Domain
 
-        let private handleTaskResult tryAgain attempts ct (result: TaskResult) =
+        let private handleTaskResult ct tryAgain attempts (result: TaskResult) =
             async {
                 match result.Status with
                 | "processing" ->
@@ -361,7 +361,7 @@ module Captcha =
                 | _ -> return Error <| Web "AntiCaptcha. Status is not 'processing' or 'ready'."
             }
 
-        let private getTaskResult httpClient key ct task =
+        let private getTaskResult ct key httpClient task =
             let data =
                 $@"
                     {{
@@ -384,20 +384,20 @@ module Captcha =
                 | 0 -> async { return Error <| Web "AntiCaptcha. No attempts left." }
                 | _ ->
                     httpClient
-                    |> Request.Post.waitString request content ct
+                    |> Request.Post.waitString ct request content
                     |> Response.Json.mapString
-                    |> ResultAsync.bind' (handleTaskResult innerLoop (attempts - 1) ct)
+                    |> ResultAsync.bind' (handleTaskResult ct innerLoop (attempts - 1))
 
             innerLoop 10
 
-        let private createTask httpClient key ct image =
+        let private createTask ct key httpClient image =
             let data =
                 $@"
                     {{
-                        ""clientKey"": ""{key}"",
+                        ""clientKey"": ""%s{key}"",
                         ""task"": {{
                             ""type"": ""ImageToTextTask"",
-                            ""body"": ""{image |> Convert.ToBase64String}"",
+                            ""body"": ""%s{image |> Convert.ToBase64String}"",
                             ""phrase"": false,
                             ""case"": false,
                             ""numeric"": 0,
@@ -416,9 +416,9 @@ module Captcha =
                        MediaType = "application/json" |}
 
             httpClient
-            |> Request.Post.waitString request content ct
+            |> Request.Post.waitString ct request content
             |> Response.Json.mapString
-            |> ResultAsync.bind' (getTaskResult httpClient key ct)
+            |> ResultAsync.bind' (getTaskResult ct key httpClient )
 
         let solveToInt ct image =
             Configuration.getEnvVar "AntiCaptchaApiKey"
@@ -430,6 +430,6 @@ module Captcha =
                     let createHttpClient url = create url None
 
                     let createCaptchaTask =
-                        ResultAsync.wrap (fun httpClient -> image |> createTask httpClient key ct)
+                        ResultAsync.wrap (fun httpClient -> image |> createTask ct key httpClient)
 
                     createHttpClient "https://api.anti-captcha.com" |> createCaptchaTask)
