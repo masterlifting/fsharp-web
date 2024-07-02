@@ -4,7 +4,7 @@ open System
 open System.Net.Http
 open System.Threading
 open Infrastructure
-open Infrastructure.Dsl
+open Infrastructure.DSL
 open Infrastructure.Domain.Errors
 open Web.Domain.Http
 
@@ -324,7 +324,7 @@ module Request =
 
 module Response =
     module Json =
-        open Infrastructure.Dsl.SerDe
+        open Infrastructure.DSL.SerDe
 
         let mapString<'a> (response: Async<Result<string, Error'>>) =
             response |> ResultAsync.bind (Json.deserialize'<'a> Json.WebApi)
@@ -340,8 +340,8 @@ module Captcha =
             type Solution = { Text: string }
             type TaskResult = { Status: string; Solution: Solution }
 
-        open Infrastructure.Dsl.ActivePatterns
-        open Infrastructure.Dsl.Threading
+        open Infrastructure.DSL.AP
+        open Infrastructure.DSL.Threading
         open Domain
 
         let private handleTaskResult ct tryAgain attempts (result: TaskResult) =
