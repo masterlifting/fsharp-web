@@ -358,7 +358,7 @@ module Captcha =
                         match result.Solution.Text with
                         | IsInt result -> Ok result
                         | _ -> Error <| Parsing $"AntiCaptcha. Is not an integer: '{result.Solution.Text}'."
-                | _ -> return Error <| Web "AntiCaptcha. Status is not 'processing' or 'ready'."
+                | _ -> return Error <| Web "AntiCaptcha. Not supported status."
             }
 
         let private getTaskResult ct key httpClient task =
