@@ -35,7 +35,7 @@ let private addHeaders (headers: Headers) (client: Client) =
 let private getHeaders (response: HttpResponseMessage) : Headers =
     try
         response.Headers
-        |> Seq.map (fun header -> header.Key, header.Value |> Seq.head)
+        |> Seq.map (fun header -> header.Key, header.Value |> Seq.toArray)
         |> Map
         |> Some
     with _ ->
@@ -67,10 +67,10 @@ module Request =
                         | false ->
                             return
                                 Error
-                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+                                <| Web { Message = response.ReasonPhrase; Code = Some(response.StatusCode |> int) }
 
                     with ex ->
-                        return Error <| Web ex.Message
+                        return Error <| Web  { Message = ex.Message; Code = None }
                 }
 
         let private create getContent =
@@ -87,10 +87,10 @@ module Request =
                         | false ->
                             return
                                 Error
-                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+                                <| Web { Message = response.ReasonPhrase; Code = Some(response.StatusCode |> int) }
 
                     with ex ->
-                        return Error <| Web ex.Message
+                        return Error <| Web { Message = ex.Message; Code = None }
                 }
 
         /// <summary>
@@ -189,10 +189,10 @@ module Request =
                         | false ->
                             return
                                 Error
-                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+                                <| Web { Message = response.ReasonPhrase; Code = Some(response.StatusCode |> int) }
 
                     with ex ->
-                        return Error <| Web ex.Message
+                        return Error <| Web { Message = ex.Message; Code = None } 
                 }
 
         let private create getContent =
@@ -215,10 +215,12 @@ module Request =
                         | false ->
                             return
                                 Error
-                                <| Web $"Status code: {response.StatusCode}; Reason: {response.ReasonPhrase}"
+                                <| Web
+                                    { Message = response.ReasonPhrase
+                                      Code = Some(response.StatusCode |> int) }
 
                     with ex ->
-                        return Error <| Web ex.Message
+                        return Error <| Web { Message = ex.Message; Code = None }
                 }
 
         /// <summary>
@@ -358,7 +360,12 @@ module Captcha =
                         match result.Solution.Text with
                         | IsInt result -> Ok result
                         | _ -> Error <| Parsing $"AntiCaptcha. Is not an integer: '{result.Solution.Text}'."
-                | _ -> return Error <| Web "AntiCaptcha. Not supported status."
+                | _ ->
+                    return
+                        Error
+                        <| Web
+                            { Message = "AntiCaptcha. Not supported status."
+                              Code = None }
             }
 
         let private getTaskResult ct key httpClient task =
@@ -381,7 +388,7 @@ module Captcha =
 
             let rec innerLoop attempts =
                 match attempts with
-                | 0 -> async { return Error <| Web "AntiCaptcha. No attempts left." }
+                | 0 -> async { return Error <| Cancelled "AntiCaptcha. No attempts left." }
                 | _ ->
                     httpClient
                     |> Request.Post.waitString ct request content
@@ -418,18 +425,21 @@ module Captcha =
             httpClient
             |> Request.Post.waitString ct request content
             |> Response.Json.mapString
-            |> ResultAsync.bind' (getTaskResult ct key httpClient )
+            |> ResultAsync.bind' (getTaskResult ct key httpClient)
 
-        let solveToInt ct image =
-            Configuration.getEnvVar "AntiCaptchaApiKey"
-            |> ResultAsync.wrap (fun keyOpt ->
-                match keyOpt with
-                | None -> async { return Error <| Configuration "AntiCaptcha. API Key not found." }
-                | Some key ->
+        let solveToInt ct (image: byte array) =
+            match image.Length with
+            | 0 -> async { return Error <| Configuration "AntiCaptcha. Image is empty." }
+            | _ ->
+                Configuration.getEnvVar "AntiCaptchaApiKey"
+                |> ResultAsync.wrap (fun keyOpt ->
+                    match keyOpt with
+                    | None -> async { return Error <| Configuration "AntiCaptcha. API Key not found." }
+                    | Some key ->
 
-                    let createHttpClient url = create url None
+                        let createHttpClient url = create url None
 
-                    let createCaptchaTask =
-                        ResultAsync.wrap (fun httpClient -> image |> createTask ct key httpClient)
+                        let createCaptchaTask =
+                            ResultAsync.wrap (fun httpClient -> image |> createTask ct key httpClient)
 
-                    createHttpClient "https://api.anti-captcha.com" |> createCaptchaTask)
+                        createHttpClient "https://api.anti-captcha.com" |> createCaptchaTask)
