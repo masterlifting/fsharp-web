@@ -2,52 +2,77 @@ module Web.Client.Http
 
 open System
 open System.Net.Http
+open System.Net.Http.Headers
 open System.Threading
 open Infrastructure
 open Infrastructure.DSL
 open Infrastructure.Domain.Errors
 open Web.Domain.Http
 
-let toUri (url: string) =
-    try
-        Ok <| Uri url
-    with ex ->
-        Error <| Parsing ex.Message
+module Route =
+    let toUri (url: string) =
+        try
+            Ok <| Uri url
+        with ex ->
+            Error <| Parsing ex.Message
 
-let toQueryParams (uri: Uri) =
-    let query = uri.Query.TrimStart('?')
+    let toQueryParams (uri: Uri) =
+        let query = uri.Query.TrimStart('?')
 
-    query.Split('&')
-    |> Array.map (fun parameter ->
-        match parameter.Split('=') with
-        | parts when parts.Length = 2 -> Ok(parts[0], parts[1])
-        | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
-    |> Seq.roe
-    |> Result.map Map
+        query.Split('&')
+        |> Array.map (fun parameter ->
+            match parameter.Split('=') with
+            | parts when parts.Length = 2 -> Ok(parts[0], parts[1])
+            | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
+        |> Seq.roe
+        |> Result.map Map
 
-let private addHeaders (headers: Headers) (client: Client) =
-    match headers with
-    | Some headers ->
-        headers
-        |> Map.iter (fun key value -> client.DefaultRequestHeaders.Add(key, value))
-    | None -> ()
 
-let private getHeaders (response: HttpResponseMessage) : Headers =
-    try
-        response.Headers
-        |> Seq.map (fun header -> header.Key, header.Value |> Seq.toArray)
-        |> Map
-        |> Some
-    with _ ->
-        None
+    let toHost (client: Client) = client.BaseAddress.Host
+
+    let toAbsoluteUri (client: Client) = client.BaseAddress.AbsoluteUri
+
+    let toOrigin (client: Client) =
+        client.BaseAddress.GetLeftPart(UriPartial.Authority)
+
+module Headers =
+    let add (headers: Headers) (client: Client) =
+        match headers with
+        | Some headers ->
+            headers
+            |> Map.iter (fun key value -> client.DefaultRequestHeaders.Add(key, value))
+        | None -> ()
+
+    let get (response: HttpResponseMessage) : Headers =
+        try
+            response.Headers
+            |> Seq.map (fun header -> header.Key, header.Value |> Seq.fold (fun acc value -> $"{value};{acc}") "")
+            |> Map
+            |> Some
+        with _ ->
+            None
+
+    let find (key: string) (values: string seq) (headers: Headers) =
+        match headers with
+        | None -> Error <| NotFound "Headers"
+        | Some headers ->
+            match headers |> Map.tryFind key with
+            | None -> Error <| NotFound key
+            | Some cookies ->
+                match cookies.Split(';') with
+                | [||] -> Error <| NotFound key
+                | cookies ->
+                    cookies
+                    |> Seq.filter (fun x -> values |> Seq.exists x.Contains)
+                    |> Ok
 
 let create (baseUrl: string) (headers: Headers) =
     baseUrl
-    |> toUri
+    |> Route.toUri
     |> Result.map (fun uri ->
         let client = new Client()
         client.BaseAddress <- uri
-        client |> addHeaders headers
+        client |> Headers.add headers
         client)
 
 module Request =
@@ -56,28 +81,30 @@ module Request =
             fun (request: Request) (ct: CancellationToken) (client: Client) ->
                 async {
                     try
-                        client |> addHeaders request.Headers
+                        client |> Headers.add request.Headers
                         let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
 
                         match response.IsSuccessStatusCode with
                         | true ->
                             let! content = getContent response |> Async.AwaitTask
-                            let headers = response |> getHeaders
+                            let headers = response |> Headers.get
                             return Ok <| (content, headers)
                         | false ->
                             return
                                 Error
-                                <| Web { Message = response.ReasonPhrase; Code = Some(response.StatusCode |> int) }
+                                <| Web
+                                    { Message = response.ReasonPhrase
+                                      Code = Some(response.StatusCode |> int) }
 
                     with ex ->
-                        return Error <| Web  { Message = ex.Message; Code = None }
+                        return Error <| Web { Message = ex.Message; Code = None }
                 }
 
         let private create getContent =
             fun (request: Request) (ct: CancellationToken) (client: Client) ->
                 async {
                     try
-                        client |> addHeaders request.Headers
+                        client |> Headers.add request.Headers
                         let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
 
                         match response.IsSuccessStatusCode with
@@ -87,7 +114,9 @@ module Request =
                         | false ->
                             return
                                 Error
-                                <| Web { Message = response.ReasonPhrase; Code = Some(response.StatusCode |> int) }
+                                <| Web
+                                    { Message = response.ReasonPhrase
+                                      Code = Some(response.StatusCode |> int) }
 
                     with ex ->
                         return Error <| Web { Message = ex.Message; Code = None }
@@ -172,39 +201,43 @@ module Request =
             fun (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) ->
                 async {
                     try
-                        client |> addHeaders request.Headers
+                        client |> Headers.add request.Headers
 
                         let content =
                             match content with
                             | Bytes data -> new ByteArrayContent(data)
-                            | String data -> new StringContent(data.Data, data.Encoding, data.MediaType)
+                            | String data ->
+                                new StringContent(data.Data, data.Encoding, MediaTypeHeaderValue(data.MediaType))
 
                         let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
 
                         match response.IsSuccessStatusCode with
                         | true ->
                             let! content = getContent response |> Async.AwaitTask
-                            let headers = response |> getHeaders
+                            let headers = response |> Headers.get
                             return Ok <| (content, headers)
                         | false ->
                             return
                                 Error
-                                <| Web { Message = response.ReasonPhrase; Code = Some(response.StatusCode |> int) }
+                                <| Web
+                                    { Message = response.ReasonPhrase
+                                      Code = Some(response.StatusCode |> int) }
 
                     with ex ->
-                        return Error <| Web { Message = ex.Message; Code = None } 
+                        return Error <| Web { Message = ex.Message; Code = None }
                 }
 
         let private create getContent =
             fun (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) ->
                 async {
                     try
-                        client |> addHeaders request.Headers
+                        client |> Headers.add request.Headers
 
                         let content =
                             match content with
                             | Bytes data -> new ByteArrayContent(data)
-                            | String data -> new StringContent(data.Data, data.Encoding, data.MediaType)
+                            | String data ->
+                                new StringContent(data.Data, data.Encoding, MediaTypeHeaderValue(data.MediaType))
 
                         let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
 

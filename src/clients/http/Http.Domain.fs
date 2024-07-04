@@ -4,7 +4,7 @@ open System
 
 type Client = Net.Http.HttpClient
 
-type Headers = Map<string, string array> option
+type Headers = Map<string, string> option
 
 type Request = { Path: string; Headers: Headers }
 
