@@ -40,7 +40,12 @@ module Headers =
         match headers with
         | Some headers ->
             headers
-            |> Map.iter (fun key value -> client.DefaultRequestHeaders.Add(key, value))
+            |> Map.iter (fun key value ->
+                match client.DefaultRequestHeaders.TryGetValues(key) with
+                | true, values ->
+                    client.DefaultRequestHeaders.Remove(key) |> ignore
+                    client.DefaultRequestHeaders.Add(key, values |> Seq.append [ value ] |> Seq.rev)
+                | _ -> client.DefaultRequestHeaders.Add(key, value))
         | None -> ()
 
     let get (response: HttpResponseMessage) : Headers =
@@ -57,14 +62,11 @@ module Headers =
         | None -> Error <| NotFound "Headers"
         | Some headers ->
             match headers |> Map.tryFind key with
-            | None -> Error <| NotFound key
-            | Some cookies ->
-                match cookies.Split(';') with
-                | [||] -> Error <| NotFound key
-                | cookies ->
-                    cookies
-                    |> Seq.filter (fun x -> values |> Seq.exists x.Contains)
-                    |> Ok
+            | None -> Error <| NotFound $"Header '{key}'"
+            | Some value ->
+                match value.Split(';') with
+                | [||] -> Error <| NotFound $"Header '{key}' is empty."
+                | items -> items |> Seq.filter (fun x -> values |> Seq.exists x.Contains) |> Ok
 
 let create (baseUrl: string) (headers: Headers) =
     baseUrl
