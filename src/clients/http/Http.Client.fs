@@ -40,33 +40,49 @@ module Headers =
         match headers with
         | Some headers ->
             headers
-            |> Map.iter (fun key value ->
+            |> Map.iter (fun key values ->
                 match client.DefaultRequestHeaders.TryGetValues(key) with
-                | true, values ->
+                | true, values' ->
                     client.DefaultRequestHeaders.Remove(key) |> ignore
-                    client.DefaultRequestHeaders.Add(key, values |> Seq.append [ value ] |> Seq.rev)
-                | _ -> client.DefaultRequestHeaders.Add(key, value))
+                    client.DefaultRequestHeaders.Add(key, values' |> Seq.append values |> Seq.rev)
+                | _ -> client.DefaultRequestHeaders.Add(key, values))
         | None -> ()
 
     let get (response: HttpResponseMessage) : Headers =
         try
             response.Headers
-            |> Seq.map (fun header -> header.Key, header.Value |> Seq.fold (fun acc value -> $"{value};{acc}") "")
+            |> Seq.map (fun header -> header.Key, header.Value |> Seq.toList)
             |> Map
             |> Some
         with _ ->
             None
 
-    let find (key: string) (values: string seq) (headers: Headers) =
+    let find (key: string) (patterns: string seq) (headers: Headers) =
         match headers with
         | None -> Error <| NotFound "Headers"
         | Some headers ->
             match headers |> Map.tryFind key with
             | None -> Error <| NotFound $"Header '{key}'"
-            | Some value ->
-                match value.Split(';') with
-                | [||] -> Error <| NotFound $"Header '{key}' is empty."
-                | items -> items |> Seq.filter (fun x -> values |> Seq.exists x.Contains) |> Ok
+            | Some values ->
+                match values with
+                | [] -> Error <| NotFound $"Header '{key}' is empty."
+                | items ->
+                    items
+                    |> Seq.map (fun x ->
+                        match x.Split(';') with
+                        | [||] ->
+                            match patterns |> Seq.exists x.Contains with
+                            | true -> Some [ x ]
+                            | _ -> None
+                        | parts ->
+                            parts
+                            |> Array.filter (fun x -> patterns |> Seq.exists x.Contains)
+                            |> Array.toList
+                            |> Some)
+                    |> Seq.choose id
+                    |> Seq.concat
+                    |> Seq.toList
+                    |> Ok
 
 let create (baseUrl: string) (headers: Headers) =
     baseUrl
