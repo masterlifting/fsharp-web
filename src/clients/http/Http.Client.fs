@@ -69,7 +69,7 @@ module Headers =
                 | items ->
                     items
                     |> Seq.map (fun x ->
-                        match x.Split(';') with
+                        match x.Split ';' with
                         | [||] ->
                             match patterns |> Seq.exists x.Contains with
                             | true -> Some [ x ]
@@ -93,6 +93,8 @@ let create (baseUrl: string) (headers: Headers) =
         client |> Headers.add headers
         client)
 
+let close (client: Client) = client.Dispose()
+
 module Request =
     module Get =
         let private create' getContent =
@@ -108,13 +110,16 @@ module Request =
                             let headers = response |> Headers.get
                             return Ok <| (content, headers)
                         | false ->
+                            client.Dispose()
+
                             return
                                 Error
                                 <| Web
                                     { Message = response.ReasonPhrase
-                                      Code = Some(response.StatusCode |> int) }
+                                      Code = response.StatusCode |> int |> Some }
 
                     with ex ->
+                        client.Dispose()
                         return Error <| Web { Message = ex.Message; Code = None }
                 }
 
@@ -130,13 +135,16 @@ module Request =
                             let! content = getContent response |> Async.AwaitTask
                             return Ok <| content
                         | false ->
+                            client.Dispose()
+
                             return
                                 Error
                                 <| Web
                                     { Message = response.ReasonPhrase
-                                      Code = Some(response.StatusCode |> int) }
+                                      Code = response.StatusCode |> int |> Some }
 
                     with ex ->
+                        client.Dispose()
                         return Error <| Web { Message = ex.Message; Code = None }
                 }
 
@@ -235,13 +243,16 @@ module Request =
                             let headers = response |> Headers.get
                             return Ok <| (content, headers)
                         | false ->
+                            client.Dispose()
+
                             return
                                 Error
                                 <| Web
                                     { Message = response.ReasonPhrase
-                                      Code = Some(response.StatusCode |> int) }
+                                      Code = response.StatusCode |> int |> Some }
 
                     with ex ->
+                        client.Dispose()
                         return Error <| Web { Message = ex.Message; Code = None }
                 }
 
@@ -264,13 +275,16 @@ module Request =
                             let! content = getContent response |> Async.AwaitTask
                             return Ok <| content
                         | false ->
+                            client.Dispose()
+
                             return
                                 Error
                                 <| Web
                                     { Message = response.ReasonPhrase
-                                      Code = Some(response.StatusCode |> int) }
+                                      Code = response.StatusCode |> int |> Some }
 
                     with ex ->
+                        client.Dispose()
                         return Error <| Web { Message = ex.Message; Code = None }
                 }
 
