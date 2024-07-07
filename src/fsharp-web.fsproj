@@ -8,6 +8,7 @@
     <Compile Include="clients\telegram\Telegram.Client.fs" />
     <Compile Include="clients\http\Http.Domain.fs" />
     <Compile Include="clients\http\Http.Client.fs" />
+    <Compile Include="clients\http\Http.Captcha.fs" />
     <Compile Include="parsers\Html.fs" />
   </ItemGroup>
   <ItemGroup>
