@@ -10,12 +10,12 @@ open Infrastructure.DSL.AP
 open Infrastructure.DSL.Threading
 
 module AntiCaptcha =
-    type private Task = { ErrorId: int; TaskId: int }
-    type private Solution = { Text: string }
-    type private TaskResult = { Status: string; Solution: Solution }
+    type Task = { ErrorId: string; TaskId: string }
+    type Solution = { Text: string }
+    type TaskResult = { Status: string; Solution: Solution }
 
 
-    let private handleTaskResult ct tryAgain attempts (result: TaskResult) =
+    let private handleTaskResult ct tryAgain attempts result =
         async {
             match result.Status with
             | "processing" ->
@@ -25,14 +25,14 @@ module AntiCaptcha =
                     return! tryAgain attempts
                 | _ -> return Error <| Cancelled "AntiCaptcha"
             | "ready" ->
-                let dateFormat = "yyyy_MM_dd_HH_mm_ss"
-                let time = DateTime.Now.ToString dateFormat
-                let filePath = $"{Environment.CurrentDirectory}/captcha/{time}.txt"
-                IO.File.WriteAllText(filePath, result.Solution.Text)
-
                 return
                     match result.Solution.Text with
-                    | IsInt result -> Ok result
+                    | IsInt result ->
+                        let dateFormat = "yyyy_MM_dd_HH_mm_ss"
+                        let time = DateTime.Now.ToString dateFormat
+                        let filePath = $"{Environment.CurrentDirectory}/captcha/{time}.txt"
+                        IO.File.WriteAllText(filePath, result.ToString())
+                        Ok result
                     | _ -> Error <| Parsing $"AntiCaptcha. Is not an integer: '{result.Solution.Text}'."
             | _ ->
                 return
