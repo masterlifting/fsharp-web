@@ -13,10 +13,11 @@ module AntiCaptcha =
 
     [<Struct>]
     type Task = { TaskId: uint64 }
+
     type Solution = { Text: string }
     type TaskResult = { Status: string; Solution: Solution }
 
-    
+
     let private createGetTaskResultRequest key task =
         let data =
             $@"
@@ -54,9 +55,7 @@ module AntiCaptcha =
                 }}
             }}"
 
-        let request =
-            { Path = "/createTask"
-              Headers = None }
+        let request = { Path = "/createTask"; Headers = None }
 
         let content =
             String
@@ -66,7 +65,7 @@ module AntiCaptcha =
 
         request, content
 
-    
+
     let private handleTaskResult ct tryAgain attempts result =
         async {
             match result.Status with
@@ -80,17 +79,12 @@ module AntiCaptcha =
                 return
                     match result.Solution.Text with
                     | IsInt result -> Ok result
-                    | _ -> Error <| Parsing $"AntiCaptcha. Is not an integer: '{result.Solution.Text}'."
-            | _ ->
-                return
-                    Error
-                    <| Web
-                        { Message = "AntiCaptcha. Not supported status."
-                          Code = None }
+                    | _ -> Error <| NotSupported $"AntiCaptcha. Result: '{result.Solution.Text}'."
+            | _ -> return Error <| NotSupported "AntiCaptcha. Status."
         }
 
     let private getTaskResult ct key httpClient task =
-        
+
         let request, content = createGetTaskResultRequest key task
 
         let rec innerLoop attempts =
@@ -114,12 +108,12 @@ module AntiCaptcha =
 
     let solveToInt ct (image: byte array) =
         match image.Length with
-        | 0 -> async { return Error <| Configuration "AntiCaptcha. Image is empty." }
+        | 0 -> async { return Error <| NotFound "AntiCaptcha. Image to solve." }
         | _ ->
             Configuration.getEnvVar "AntiCaptchaApiKey"
             |> ResultAsync.wrap (fun keyOpt ->
                 match keyOpt with
-                | None -> async { return Error <| Configuration "AntiCaptcha. API Key not found." }
+                | None -> async { return Error <| NotFound "AntiCaptcha. API Key." }
                 | Some key ->
 
                     let createHttpClient url = Http.create url None

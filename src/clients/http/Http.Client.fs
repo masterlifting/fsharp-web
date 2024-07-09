@@ -14,7 +14,7 @@ module Route =
         try
             Ok <| Uri url
         with ex ->
-            Error <| Parsing ex.Message
+            Error <| NotSupported ex.Message
 
     let toQueryParams (uri: Uri) =
         let query = uri.Query.TrimStart('?')
@@ -23,7 +23,7 @@ module Route =
         |> Array.map (fun parameter ->
             match parameter.Split('=') with
             | parts when parts.Length = 2 -> Ok(parts[0], parts[1])
-            | _ -> Error <| Parsing $"Invalid query parameter '{parameter}' in '{uri}'")
+            | _ -> Error <| NotSupported $"Query parameter '{parameter}' in '{uri}'")
         |> Seq.roe
         |> Result.map Map
 
@@ -114,13 +114,13 @@ module Request =
 
                             return
                                 Error
-                                <| Web
+                                <| Operation
                                     { Message = response.ReasonPhrase
-                                      Code = response.StatusCode |> int |> Some }
+                                      Code = response.StatusCode |> string |> Some }
 
                     with ex ->
                         client.Dispose()
-                        return Error <| Web { Message = ex.Message; Code = None }
+                        return Error <| Operation { Message = ex.Message; Code = None }
                 }
 
         let private create getContent =
@@ -139,13 +139,13 @@ module Request =
 
                             return
                                 Error
-                                <| Web
+                                <| Operation
                                     { Message = response.ReasonPhrase
-                                      Code = response.StatusCode |> int |> Some }
+                                      Code = response.StatusCode |> string |> Some }
 
                     with ex ->
                         client.Dispose()
-                        return Error <| Web { Message = ex.Message; Code = None }
+                        return Error <| Operation { Message = ex.Message; Code = None }
                 }
 
         /// <summary>
@@ -247,13 +247,13 @@ module Request =
 
                             return
                                 Error
-                                <| Web
+                                <| Operation
                                     { Message = response.ReasonPhrase
-                                      Code = response.StatusCode |> int |> Some }
+                                      Code = response.StatusCode |> string |> Some }
 
                     with ex ->
                         client.Dispose()
-                        return Error <| Web { Message = ex.Message; Code = None }
+                        return Error <| Operation { Message = ex.Message; Code = None }
                 }
 
         let private create getContent =
@@ -279,13 +279,13 @@ module Request =
 
                             return
                                 Error
-                                <| Web
+                                <| Operation
                                     { Message = response.ReasonPhrase
-                                      Code = response.StatusCode |> int |> Some }
+                                      Code = response.StatusCode |> string |> Some }
 
                     with ex ->
                         client.Dispose()
-                        return Error <| Web { Message = ex.Message; Code = None }
+                        return Error <| Operation { Message = ex.Message; Code = None }
                 }
 
         /// <summary>
