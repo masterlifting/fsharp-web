@@ -79,7 +79,7 @@ module AntiCaptcha =
                 return
                     match result.Solution.Text with
                     | IsInt result -> Ok result
-                    | _ -> Error <| NotSupported $"AntiCaptcha. Result: '{result.Solution.Text}'."
+                    | _ -> Error <| NotSupported $"AntiCaptcha. The '{result.Solution.Text}' is not integer."
             | _ -> return Error <| NotSupported "AntiCaptcha. Status."
         }
 

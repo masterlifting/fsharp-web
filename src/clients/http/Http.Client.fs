@@ -17,16 +17,15 @@ module Route =
             Error <| NotSupported ex.Message
 
     let toQueryParams (uri: Uri) =
-        let query = uri.Query.TrimStart('?')
+        let query = uri.Query.TrimStart '?'
 
-        query.Split('&')
+        query.Split '&'
         |> Array.map (fun parameter ->
             match parameter.Split('=') with
-            | parts when parts.Length = 2 -> Ok(parts[0], parts[1])
+            | parts when parts.Length = 2 -> Ok <| (parts[0], parts[1])
             | _ -> Error <| NotSupported $"Query parameter '{parameter}' in '{uri}'")
         |> Seq.roe
         |> Result.map Map
-
 
     let toHost (client: Client) = client.BaseAddress.Host
 
