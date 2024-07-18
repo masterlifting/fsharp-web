@@ -1,4 +1,4 @@
-[<RequireQualifiedAccessAttribute>]
+[<RequireQualifiedAccess>]
 module Web.Client.Http
 
 open System
