@@ -15,7 +15,7 @@ module Internal =
     type ButtonsGroup =
         { Id: int option
           Buttons: Button seq
-          Cloumns: int }
+          Columns: int }
 
     type Request =
         | Message of ChatId * Text

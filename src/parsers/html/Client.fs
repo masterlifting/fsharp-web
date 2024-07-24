@@ -1,8 +1,8 @@
 ﻿[<RequireQualifiedAccess>]
 module Web.Parser.Client.Html
 
+open Infrastructure
 open Web.Parser.Domain.Html
-open Infrastructure.Domain.Errors
 
 let load (html: string) =
     try

@@ -2,10 +2,6 @@ module Web.Http.Captcha
 
 open System
 open Infrastructure
-open Infrastructure.DSL
-open Infrastructure.DSL.AP
-open Infrastructure.DSL.Threading
-open Infrastructure.Domain.Errors
 open Web.Domain.Http
 open Web.Client
 
@@ -78,7 +74,7 @@ module AntiCaptcha =
             | "ready" ->
                 return
                     match result.Solution.Text with
-                    | IsInt result -> Ok result
+                    | AP.IsInt result -> Ok result
                     | _ -> Error <| NotSupported $"AntiCaptcha. The '{result.Solution.Text}' is not integer."
             | _ -> return Error <| NotSupported "AntiCaptcha. Status."
         }

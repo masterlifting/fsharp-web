@@ -1,7 +1,7 @@
 module Web.Client.Telegram
 
 open System.Threading
-open Infrastructure.Domain.Errors
+open Infrastructure
 open Web.Domain.Telegram.Internal
 
 

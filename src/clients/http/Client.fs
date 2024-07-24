@@ -5,8 +5,7 @@ open System
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Threading
-open Infrastructure.DSL
-open Infrastructure.Domain.Errors
+open Infrastructure
 open Web.Domain.Http
 
 module Route =
