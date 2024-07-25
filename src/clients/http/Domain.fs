@@ -14,3 +14,8 @@ type RequestContent =
         {| Data: string
            Encoding: Text.Encoding
            MediaType: string |}
+
+type Response<'a> =
+    { Content: 'a
+      StatusCode: int
+      Headers: Headers }

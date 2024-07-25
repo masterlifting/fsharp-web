@@ -8,14 +8,9 @@
     <Compile Include="clients\telegram\Client.fs" />
     <Compile Include="clients\http\Domain.fs" />
     <Compile Include="clients\http\Client.fs" />
-    <Compile Include="clients\http\Captcha.fs" />
-    <Compile Include="parsers\html\Domain.fs" />
-    <Compile Include="parsers\html\Client.fs" />
+    <Compile Include="Captcha.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\fsharp-infrastructure\src\fsharp-infrastructure.fsproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
   </ItemGroup>
 </Project>
