@@ -57,13 +57,13 @@ module Headers =
 
     let find (key: string) (patterns: string seq) (headers: Headers) =
         match headers with
-        | None -> Error <| NotFound "Headers"
+        | None -> Error <| NotFound "Headers."
         | Some headers ->
             match headers |> Map.tryFind key with
-            | None -> Error <| NotFound $"Header '{key}'"
+            | None -> Error <| NotFound $"Required header '{key}'."
             | Some values ->
                 match values with
-                | [] -> Error <| NotFound $"Header '{key}' is empty."
+                | [] -> Error <| NotFound $"Required value of the header '{key}'."
                 | items ->
                     items
                     |> Seq.map (fun x ->
