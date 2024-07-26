@@ -41,7 +41,7 @@ module Headers =
             |> Map.iter (fun key values ->
                 match client.DefaultRequestHeaders.TryGetValues(key) with
                 | true, values' ->
-                    client.DefaultRequestHeaders.Remove(key) |> ignore
+                    client.DefaultRequestHeaders.Remove key |> ignore
                     client.DefaultRequestHeaders.Add(key, values' |> Seq.append values |> Seq.rev)
                 | _ -> client.DefaultRequestHeaders.Add(key, values))
         | None -> ()
@@ -82,16 +82,25 @@ module Headers =
                     |> Seq.toList
                     |> Ok
 
+let private clients = ClientFactory()
+
 let create (baseUrl: string) (headers: Headers) =
     baseUrl
     |> Route.toUri
     |> Result.map (fun uri ->
-        let client = new Client()
-        client.BaseAddress <- uri
-        client |> Headers.add headers
-        client)
 
-let close (client: Client) = client.Dispose()
+        match clients.TryGetValue baseUrl with
+        | true, client -> client
+        | _ ->
+            let client = new Client()
+            client.BaseAddress <- uri
+            client |> Headers.add headers
+            clients.TryAdd(baseUrl, client) |> ignore
+            client)
+
+let close (client: Client) =
+    client.Dispose()
+    clients.TryRemove(Route.toHost client) |> ignore
 
 module Request =
 
@@ -104,7 +113,7 @@ module Request =
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
-                    client.Dispose()
+                    client |> close
 
                     return
                         Error
@@ -113,7 +122,7 @@ module Request =
                               Code = response.StatusCode |> string |> Some }
 
             with ex ->
-                client.Dispose()
+                client |> close
                 return Error <| Operation { Message = ex.Message; Code = None }
         }
 
@@ -132,7 +141,7 @@ module Request =
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
-                    client.Dispose()
+                    client |> close
 
                     return
                         Error
@@ -141,7 +150,7 @@ module Request =
                               Code = response.StatusCode |> string |> Some }
 
             with ex ->
-                client.Dispose()
+                client |> close
                 return Error <| Operation { Message = ex.Message; Code = None }
         }
 

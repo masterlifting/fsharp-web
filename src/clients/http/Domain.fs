@@ -1,8 +1,10 @@
 module Web.Domain.Http
 
 open System
+open System.Collections.Concurrent
 
 type Client = Net.Http.HttpClient
+type ClientFactory = ConcurrentDictionary<string, Net.Http.HttpClient>
 
 type Headers = Map<string, string list> option
 
