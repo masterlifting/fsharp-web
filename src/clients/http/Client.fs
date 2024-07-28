@@ -40,9 +40,9 @@ module Headers =
             headers
             |> Map.iter (fun key values ->
                 match client.DefaultRequestHeaders.TryGetValues(key) with
-                | true, values' ->
+                | true, existingValues ->
                     client.DefaultRequestHeaders.Remove key |> ignore
-                    client.DefaultRequestHeaders.Add(key, values' |> Seq.append values |> Seq.rev)
+                    client.DefaultRequestHeaders.Add(key, existingValues |> Seq.append values |> Seq.rev)
                 | _ -> client.DefaultRequestHeaders.Add(key, values))
         | None -> ()
 
@@ -81,6 +81,11 @@ module Headers =
                     |> Seq.concat
                     |> Seq.toList
                     |> Ok
+
+    let tryFind (key: string) (patterns: string seq) (headers: Headers) =
+        match find key patterns headers with
+        | Ok values -> Some values
+        | _ -> None
 
 let private clients = ClientFactory()
 
