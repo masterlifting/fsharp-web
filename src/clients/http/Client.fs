@@ -39,11 +39,14 @@ module Headers =
         | Some headers ->
             headers
             |> Map.iter (fun key values ->
-                match client.DefaultRequestHeaders.TryGetValues(key) with
-                | true, existingValues ->
-                    client.DefaultRequestHeaders.Remove key |> ignore
-                    client.DefaultRequestHeaders.Add(key, existingValues |> Seq.append values |> Seq.rev)
-                | _ -> client.DefaultRequestHeaders.Add(key, values))
+                let updatedValues =
+                    match client.DefaultRequestHeaders.TryGetValues key with
+                    | true, existingValues ->
+                        client.DefaultRequestHeaders.Remove key |> ignore
+                        values |> Seq.append existingValues |> Seq.distinct
+                    | _ -> values
+
+                client.DefaultRequestHeaders.Add(key, updatedValues))
         | None -> ()
 
     let get (response: HttpResponseMessage) : Headers =
@@ -103,10 +106,6 @@ let create (baseUrl: string) (headers: Headers) =
             clients.TryAdd(baseUrl, client) |> ignore
             client)
 
-let close (client: Client) =
-    client.Dispose()
-    clients.TryRemove(Route.toHost client) |> ignore
-
 module Request =
 
     let get (ct: CancellationToken) (request: Request) (client: Client) =
@@ -118,8 +117,6 @@ module Request =
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
-                    client |> close
-
                     return
                         Error
                         <| Operation
@@ -127,8 +124,8 @@ module Request =
                               Code = response.StatusCode |> string |> Some }
 
             with ex ->
-                client |> close
-                return Error <| Operation { Message = ex.Message; Code = None }
+                let message = ex |> Exception.toMessage
+                return Error <| Operation { Message = message; Code = None }
         }
 
     let post (ct: CancellationToken) (request: Request) (content: RequestContent) (client: Client) =
@@ -146,8 +143,6 @@ module Request =
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
-                    client |> close
-
                     return
                         Error
                         <| Operation
@@ -155,8 +150,8 @@ module Request =
                               Code = response.StatusCode |> string |> Some }
 
             with ex ->
-                client |> close
-                return Error <| Operation { Message = ex.Message; Code = None }
+                let message = ex |> Exception.toMessage
+                return Error <| Operation { Message = message; Code = None }
         }
 
 module Response =
@@ -167,7 +162,7 @@ module Response =
                 try
                     match! response with
                     | Ok response ->
-                        let! result = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
+                        let! result = response.Content.ReadAsStringAsync ct |> Async.AwaitTask
 
                         return
                             Ok
@@ -176,7 +171,8 @@ module Response =
                                  Content = result }
                     | Error error -> return Error error
                 with ex ->
-                    return Error <| Operation { Message = ex.Message; Code = None }
+                    let message = ex |> Exception.toMessage
+                    return Error <| Operation { Message = message; Code = None }
             }
 
         let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -184,12 +180,13 @@ module Response =
                 try
                     match! response with
                     | Ok response ->
-                        let! result = response.Content.ReadAsStringAsync(ct) |> Async.AwaitTask
+                        let! result = response.Content.ReadAsStringAsync ct |> Async.AwaitTask
 
                         return Ok result
                     | Error error -> return Error error
                 with ex ->
-                    return Error <| Operation { Message = ex.Message; Code = None }
+                    let message = ex |> Exception.toMessage
+                    return Error <| Operation { Message = message; Code = None }
             }
 
         let fromJson<'a> (response: Async<Result<string, Error'>>) =
@@ -201,7 +198,7 @@ module Response =
                 try
                     match! response with
                     | Ok response ->
-                        let! result = response.Content.ReadAsByteArrayAsync(ct) |> Async.AwaitTask
+                        let! result = response.Content.ReadAsByteArrayAsync ct |> Async.AwaitTask
 
                         return
                             Ok
@@ -210,7 +207,8 @@ module Response =
                                  Content = result }
                     | Error error -> return Error error
                 with ex ->
-                    return Error <| Operation { Message = ex.Message; Code = None }
+                    let message = ex |> Exception.toMessage
+                    return Error <| Operation { Message = message; Code = None }
             }
 
         let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -218,12 +216,13 @@ module Response =
                 try
                     match! response with
                     | Ok response ->
-                        let! result = response.Content.ReadAsByteArrayAsync(ct) |> Async.AwaitTask
+                        let! result = response.Content.ReadAsByteArrayAsync ct |> Async.AwaitTask
 
                         return Ok result
                     | Error error -> return Error error
                 with ex ->
-                    return Error <| Operation { Message = ex.Message; Code = None }
+                    let message = ex |> Exception.toMessage
+                    return Error <| Operation { Message = message; Code = None }
             }
 
     module Stream =
@@ -232,7 +231,7 @@ module Response =
                 try
                     match! response with
                     | Ok response ->
-                        let! result = response.Content.ReadAsStreamAsync(ct) |> Async.AwaitTask
+                        let! result = response.Content.ReadAsStreamAsync ct |> Async.AwaitTask
 
                         return
                             Ok
@@ -241,7 +240,8 @@ module Response =
                                  Content = result }
                     | Error error -> return Error error
                 with ex ->
-                    return Error <| Operation { Message = ex.Message; Code = None }
+                    let message = ex |> Exception.toMessage
+                    return Error <| Operation { Message = message; Code = None }
             }
 
         let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -249,12 +249,13 @@ module Response =
                 try
                     match! response with
                     | Ok response ->
-                        let! result = response.Content.ReadAsStreamAsync(ct) |> Async.AwaitTask
+                        let! result = response.Content.ReadAsStreamAsync ct |> Async.AwaitTask
 
                         return Ok result
                     | Error error -> return Error error
                 with ex ->
-                    return Error <| Operation { Message = ex.Message; Code = None }
+                    let message = ex |> Exception.toMessage
+                    return Error <| Operation { Message = message; Code = None }
             }
 
     module Unit =
@@ -262,8 +263,9 @@ module Response =
             async {
                 try
                     match! response with
-                    | Ok _ -> return Ok ()
+                    | Ok _ -> return Ok()
                     | Error error -> return Error error
                 with ex ->
-                    return Error <| Operation { Message = ex.Message; Code = None }
+                    let message = ex |> Exception.toMessage
+                    return Error <| Operation { Message = message; Code = None }
             }
