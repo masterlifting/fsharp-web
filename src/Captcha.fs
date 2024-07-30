@@ -2,8 +2,7 @@ module Web.Captcha
 
 open System
 open Infrastructure
-open Web.Domain.Http
-open Web.Client
+open Web.Http.Domain
 
 [<Struct>]
 type Task = { TaskId: uint64 }
@@ -86,9 +85,9 @@ let private getTaskResult ct key httpClient task =
         | 0 -> async { return Error <| Cancelled "Captcha. No attempts left." }
         | _ ->
             httpClient
-            |> Http.Request.post ct request content
-            |> Http.Response.String.readContent ct
-            |> Http.Response.String.fromJson<TaskResult>
+            |> Http.Client.Request.post ct request content
+            |> Http.Client.Response.String.readContent ct
+            |> Http.Client.Response.String.fromJson<TaskResult>
             |> ResultAsync.bind' (handleTaskResult ct innerLoop (attempts - 1))
 
     innerLoop 10
@@ -97,9 +96,9 @@ let private createTask ct key httpClient image =
     let request, content = createCreateTaskRequest key image
 
     httpClient
-    |> Http.Request.post ct request content
-    |> Http.Response.String.readContent ct
-    |> Http.Response.String.fromJson<Task>
+    |> Http.Client.Request.post ct request content
+    |> Http.Client.Response.String.readContent ct
+    |> Http.Client.Response.String.fromJson<Task>
     |> ResultAsync.bind' (getTaskResult ct key httpClient)
 
 let solveToInt ct (image: byte array) =
@@ -112,7 +111,7 @@ let solveToInt ct (image: byte array) =
             | None -> async { return Error <| NotFound "AntiCaptcha. API Key." }
             | Some key ->
 
-                let createHttpClient url = Http.create url None
+                let createHttpClient url = Http.Client.create url None
 
                 let createCaptchaTask =
                     ResultAsync.wrap (fun httpClient -> image |> createTask ct key httpClient)

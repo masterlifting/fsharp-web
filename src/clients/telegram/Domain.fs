@@ -1,4 +1,4 @@
-module Web.Domain.Telegram
+module Web.Telegram.Domain
 
 module Internal =
     type Client = WebClient

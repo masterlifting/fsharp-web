@@ -1,8 +1,8 @@
-module Web.Client.Telegram
+module Web.Telegram.Client
 
 open System.Threading
 open Infrastructure
-open Web.Domain.Telegram.Internal
+open Web.Telegram.Domain.Internal
 
 
 let create (token: string) : Result<Client, Error'> =

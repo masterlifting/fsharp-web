@@ -1,13 +1,13 @@
-[<RequireQualifiedAccess>]
-module Web.Client.Http
+module Web.Http.Client
 
 open System
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Threading
 open Infrastructure
-open Web.Domain.Http
+open Web.Http.Domain
 
+[<RequireQualifiedAccess>]
 module Route =
     let toUri (url: string) =
         try
@@ -33,8 +33,9 @@ module Route =
     let toOrigin (client: Client) =
         client.BaseAddress.GetLeftPart(UriPartial.Authority)
 
+[<RequireQualifiedAccess>]
 module Headers =
-    let add (headers: Headers) (client: Client) =
+    let set (headers: Headers) (client: Client) =
         match headers with
         | Some headers ->
             headers
@@ -102,16 +103,17 @@ let create (baseUrl: string) (headers: Headers) =
         | _ ->
             let client = new Client()
             client.BaseAddress <- uri
-            client |> Headers.add headers
+            client |> Headers.set headers
             clients.TryAdd(baseUrl, client) |> ignore
             client)
 
+[<RequireQualifiedAccess>]
 module Request =
 
     let get (ct: CancellationToken) (request: Request) (client: Client) =
         async {
             try
-                client |> Headers.add request.Headers
+                client |> Headers.set request.Headers
                 let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
 
                 match response.IsSuccessStatusCode with
@@ -131,7 +133,7 @@ module Request =
     let post (ct: CancellationToken) (request: Request) (content: RequestContent) (client: Client) =
         async {
             try
-                client |> Headers.add request.Headers
+                client |> Headers.set request.Headers
 
                 let content =
                     match content with
@@ -154,6 +156,7 @@ module Request =
                 return Error <| Operation { Message = message; Code = None }
         }
 
+[<RequireQualifiedAccess>]
 module Response =
 
     module String =
