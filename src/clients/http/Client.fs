@@ -45,9 +45,13 @@ module Headers =
                     | true, existingValues ->
                         client.DefaultRequestHeaders.Remove key |> ignore
                         values |> Seq.append existingValues |> Seq.distinct
-                    | _ -> values
+                    | _ -> values |> Seq.distinct
 
-                client.DefaultRequestHeaders.Add(key, updatedValues))
+                let values = updatedValues |> Seq.toArray
+
+                match values.Length with
+                | 1 -> client.DefaultRequestHeaders.Add(key, values[0])
+                | _ -> client.DefaultRequestHeaders.Add(key, updatedValues))
         | None -> ()
 
     let get (response: HttpResponseMessage) : Headers =
