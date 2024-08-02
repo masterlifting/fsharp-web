@@ -35,24 +35,32 @@ module Route =
 
 [<RequireQualifiedAccess>]
 module Headers =
+
+    let private update (key: string) (values: string seq) (client: Client) =
+        try
+            let values = values |> Seq.distinct
+            client.DefaultRequestHeaders.Remove key |> ignore
+            client.DefaultRequestHeaders.Add(key, values) |> Ok
+        with ex ->
+            let message = ex |> Exception.toMessage
+            Error <| Operation { Message = message; Code = None }
+
     let set (headers: Headers) (client: Client) =
         match headers with
         | Some headers ->
             headers
-            |> Map.iter (fun key values ->
-                let updatedValues =
-                    match client.DefaultRequestHeaders.TryGetValues key with
-                    | true, existingValues ->
-                        client.DefaultRequestHeaders.Remove key |> ignore
-                        values |> Seq.append existingValues |> Seq.distinct
-                    | _ -> values |> Seq.distinct
+            |> Seq.map (fun x ->
+                let values =
+                    match client.DefaultRequestHeaders.TryGetValues x.Key with
+                    | true, existingValues -> x.Value |> Seq.append existingValues
+                    | _ -> x.Value
+                    |> Seq.toList
 
-                let values = updatedValues |> Seq.toArray
-
-                match values.Length with
-                | 1 -> client.DefaultRequestHeaders.Add(key, values[0])
-                | _ -> client.DefaultRequestHeaders.Add(key, updatedValues))
-        | None -> ()
+                (x.Key, values))
+            |> Seq.map (fun (key, values) -> client |> update key values)
+            |> Seq.roe
+            |> Result.map (fun _ -> client)
+        | None -> Ok client
 
     let get (response: HttpResponseMessage) : Headers =
         try
@@ -100,16 +108,19 @@ let private clients = ClientFactory()
 let create (baseUrl: string) (headers: Headers) =
     baseUrl
     |> Route.toUri
-    |> Result.map (fun uri ->
+    |> Result.bind (fun uri ->
 
         match clients.TryGetValue baseUrl with
-        | true, client -> client
+        | true, client -> Ok client
         | _ ->
             let client = new Client()
             client.BaseAddress <- uri
-            client |> Headers.set headers
-            clients.TryAdd(baseUrl, client) |> ignore
-            client)
+
+            client
+            |> Headers.set headers
+            |> Result.map (fun client ->
+                clients.TryAdd(baseUrl, client) |> ignore
+                client))
 
 [<RequireQualifiedAccess>]
 module Request =
@@ -117,18 +128,19 @@ module Request =
     let get (ct: CancellationToken) (request: Request) (client: Client) =
         async {
             try
-                client |> Headers.set request.Headers
-                let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
+                match client |> Headers.set request.Headers with
+                | Error error -> return Error error
+                | Ok client ->
+                    let! response = client.GetAsync(request.Path, ct) |> Async.AwaitTask
 
-                match response.IsSuccessStatusCode with
-                | true -> return Ok response
-                | false ->
-                    return
-                        Error
-                        <| Operation
-                            { Message = response.ReasonPhrase
-                              Code = response.StatusCode |> string |> Some }
-
+                    match response.IsSuccessStatusCode with
+                    | true -> return Ok response
+                    | false ->
+                        return
+                            Error
+                            <| Operation
+                                { Message = response.ReasonPhrase
+                                  Code = response.StatusCode |> string |> Some }
             with ex ->
                 let message = ex |> Exception.toMessage
                 return Error <| Operation { Message = message; Code = None }
@@ -137,23 +149,26 @@ module Request =
     let post (ct: CancellationToken) (request: Request) (content: RequestContent) (client: Client) =
         async {
             try
-                client |> Headers.set request.Headers
+                match client |> Headers.set request.Headers with
+                | Error error -> return Error error
+                | Ok client ->
 
-                let content =
-                    match content with
-                    | Bytes data -> new ByteArrayContent(data)
-                    | String data -> new StringContent(data.Data, data.Encoding, MediaTypeHeaderValue(data.MediaType))
+                    let content =
+                        match content with
+                        | Bytes data -> new ByteArrayContent(data)
+                        | String data ->
+                            new StringContent(data.Data, data.Encoding, MediaTypeHeaderValue(data.MediaType))
 
-                let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
+                    let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
 
-                match response.IsSuccessStatusCode with
-                | true -> return Ok response
-                | false ->
-                    return
-                        Error
-                        <| Operation
-                            { Message = response.ReasonPhrase
-                              Code = response.StatusCode |> string |> Some }
+                    match response.IsSuccessStatusCode with
+                    | true -> return Ok response
+                    | false ->
+                        return
+                            Error
+                            <| Operation
+                                { Message = response.ReasonPhrase
+                                  Code = response.StatusCode |> string |> Some }
 
             with ex ->
                 let message = ex |> Exception.toMessage
