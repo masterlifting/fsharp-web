@@ -73,7 +73,7 @@ let private handleTaskResult ct tryAgain attempts result =
                 match result.Solution.Text with
                 | AP.IsInt result -> Ok result
                 | _ -> Error <| NotSupported $"Captcha. The '{result.Solution.Text}' is not integer."
-        | _ -> return Error <| NotSupported "Captcha. Status."
+        | _ -> return Error <| NotSupported "Captcha status."
     }
 
 let private getTaskResult ct key httpClient task =
