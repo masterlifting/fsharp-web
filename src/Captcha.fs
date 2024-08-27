@@ -59,21 +59,17 @@ let private createCreateTaskRequest key image =
     request, content
 
 
-let private handleTaskResult ct tryAgain attempts result =
+let private handleTaskResult tryAgain attempts result =
     async {
         match result.Status with
-        | "processing" ->
-            match ct |> notCanceled with
-            | true ->
-                do! Async.Sleep 500
-                return! tryAgain attempts
-            | _ -> return Error <| Cancelled "Captcha"
         | "ready" ->
             return
                 match result.Solution.Text with
                 | AP.IsInt result -> Ok result
-                | _ -> Error <| NotSupported $"Captcha. The '{result.Solution.Text}' is not integer."
-        | _ -> return Error <| NotSupported "Captcha status."
+                | _ -> Error <| NotSupported $"Captcha. The '{result.Solution.Text}' is not an integer."
+        | _ ->
+            do! Async.Sleep 500
+            return! tryAgain attempts
     }
 
 let private getTaskResult ct key httpClient task =
@@ -84,13 +80,16 @@ let private getTaskResult ct key httpClient task =
         match attempts with
         | 0 -> async { return Error <| Cancelled "Captcha. No attempts left." }
         | _ ->
-            httpClient
-            |> Http.Client.Request.post ct request content
-            |> Http.Client.Response.String.readContent ct
-            |> Http.Client.Response.String.fromJson<TaskResult>
-            |> ResultAsync.bind' (handleTaskResult ct innerLoop (attempts - 1))
+            if ct |> canceled then
+                innerLoop 0
+            else
+                httpClient
+                |> Http.Client.Request.post ct request content
+                |> Http.Client.Response.String.readContent ct
+                |> Http.Client.Response.String.fromJson<TaskResult>
+                |> ResultAsync.bind' (handleTaskResult innerLoop (attempts - 1))
 
-    innerLoop 10
+    innerLoop 5
 
 let private createTask ct key httpClient image =
     let request, content = createCreateTaskRequest key image

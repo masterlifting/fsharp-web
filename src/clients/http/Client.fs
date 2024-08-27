@@ -48,7 +48,7 @@ module Headers =
             Error
             <| Operation
                 { Message = message
-                  Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                  Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
 
     let set (headers: Headers) (client: Client) =
         match headers with
@@ -153,7 +153,7 @@ module Request =
                     Error
                     <| Operation
                         { Message = message
-                          Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
         }
 
     let post (ct: CancellationToken) (request: Request) (content: RequestContent) (client: Client) =
@@ -187,7 +187,7 @@ module Request =
                     Error
                     <| Operation
                         { Message = message
-                          Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
 
 [<RequireQualifiedAccess>]
@@ -214,7 +214,7 @@ module Response =
                         Error
                         <| Operation
                             { Message = message
-                              Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
             }
 
         let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -233,7 +233,7 @@ module Response =
                         Error
                         <| Operation
                             { Message = message
-                              Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
             }
 
         let fromJson<'a> (response: Async<Result<string, Error'>>) =
@@ -260,7 +260,7 @@ module Response =
                         Error
                         <| Operation
                             { Message = message
-                              Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
             }
 
         let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -279,7 +279,7 @@ module Response =
                         Error
                         <| Operation
                             { Message = message
-                              Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
             }
 
     module Stream =
@@ -303,7 +303,7 @@ module Response =
                         Error
                         <| Operation
                             { Message = message
-                              Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
             }
 
         let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -322,7 +322,7 @@ module Response =
                         Error
                         <| Operation
                             { Message = message
-                              Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
             }
 
     module Unit =
@@ -339,5 +339,5 @@ module Response =
                         Error
                         <| Operation
                             { Message = message
-                              Code = ErrorReason.buildLine (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__,__SOURCE_FILE__,__LINE__) }
             }
