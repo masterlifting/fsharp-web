@@ -4,12 +4,15 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="README.md" />
+    <None Include=".gitignore" />
     <Compile Include="clients\telegram\Domain.fs" />
     <Compile Include="clients\telegram\Client.fs" />
     <Compile Include="clients\http\Domain.fs" />
     <Compile Include="clients\http\Client.fs" />
     <Compile Include="Captcha.fs" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\..\fsharp-infrastructure\src\fsharp-infrastructure.fsproj" />
   </ItemGroup>

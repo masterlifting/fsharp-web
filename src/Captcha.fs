@@ -4,6 +4,9 @@ open System
 open Infrastructure
 open Web.Http.Domain
 
+[<Literal>]
+let CaptchaErrorCode = "CaptchaErrorCode"
+
 [<Struct>]
 type Task = { TaskId: uint64 }
 
@@ -66,7 +69,11 @@ let private handleTaskResult tryAgain attempts result =
             return
                 match result.Solution.Text with
                 | AP.IsInt result -> Ok result
-                | _ -> Error <| NotSupported $"Captcha. The '{result.Solution.Text}' is not an integer."
+                | _ ->
+                    Error
+                    <| Operation
+                        { Message = $"Captcha. The '{result.Solution.Text}' is not an integer."
+                          Code = Some CaptchaErrorCode }
         | _ ->
             do! Async.Sleep 500
             return! tryAgain attempts
