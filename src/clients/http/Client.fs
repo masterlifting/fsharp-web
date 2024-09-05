@@ -21,7 +21,7 @@ module Route =
             match parameter.Split('=') with
             | parts when parts.Length = 2 -> Ok <| (parts[0], parts[1])
             | _ -> Error <| NotSupported $"Query parameter '{parameter}'")
-        |> Seq.roe
+        |> Result.choose
         |> Result.map Map
 
     let toQueryParams (uri: Uri) =
@@ -63,7 +63,7 @@ module Headers =
 
                 (x.Key, values))
             |> Seq.map (fun (key, values) -> client |> update key values)
-            |> Seq.roe
+            |> Result.choose
             |> Result.map (fun _ -> client)
         | None -> Ok client
 
