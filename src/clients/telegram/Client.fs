@@ -2,7 +2,7 @@ module Web.Telegram.Client
 
 open System.Threading
 open Infrastructure
-open Web.Telegram.Domain.Internal
+open Web.Telegram.Domain
 
 
 let create (token: string) : Result<Client, Error'> =
