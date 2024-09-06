@@ -43,11 +43,9 @@ module Headers =
             client.DefaultRequestHeaders.Remove key |> ignore
             client.DefaultRequestHeaders.Add(key, values) |> Ok
         with ex ->
-            let message = ex |> Exception.toMessage
-
             Error
             <| Operation
-                { Message = message
+                { Message = ex |> Exception.toMessage
                   Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
 
     let set (headers: Headers) (client: Client) =
@@ -110,6 +108,17 @@ module Headers =
 
 let private clients = ClientFactory()
 
+let private create' (baseUrl: Uri) =
+    try
+        let client = new Client()
+        client.BaseAddress <- baseUrl
+        Ok client
+    with ex ->
+        Error
+        <| Operation
+            { Message = ex |> Exception.toMessage
+              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+
 let create (baseUrl: string) (headers: Headers) =
     baseUrl
     |> Route.toUri
@@ -118,14 +127,13 @@ let create (baseUrl: string) (headers: Headers) =
         match clients.TryGetValue baseUrl with
         | true, client -> Ok client
         | _ ->
-            let client = new Client()
-            client.BaseAddress <- uri
-
-            client
-            |> Headers.set headers
-            |> Result.map (fun client ->
-                clients.TryAdd(baseUrl, client) |> ignore
-                client))
+            create' uri
+            |> Result.bind (fun client ->
+                client
+                |> Headers.set headers
+                |> Result.map (fun client ->
+                    clients.TryAdd(baseUrl, client) |> ignore
+                    client)))
 
 [<RequireQualifiedAccess>]
 module Request =
@@ -147,12 +155,10 @@ module Request =
                                 { Message = response.ReasonPhrase
                                   Code = response.StatusCode |> string |> Some }
             with ex ->
-                let message = ex |> Exception.toMessage
-
                 return
                     Error
                     <| Operation
-                        { Message = message
+                        { Message = ex |> Exception.toMessage
                           Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
 
@@ -181,12 +187,10 @@ module Request =
                                   Code = response.StatusCode |> string |> Some }
 
             with ex ->
-                let message = ex |> Exception.toMessage
-
                 return
                     Error
                     <| Operation
-                        { Message = message
+                        { Message = ex |> Exception.toMessage
                           Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
 
@@ -208,12 +212,10 @@ module Response =
                                  Content = result }
                     | Error error -> return Error error
                 with ex ->
-                    let message = ex |> Exception.toMessage
-
                     return
                         Error
                         <| Operation
-                            { Message = message
+                            { Message = ex |> Exception.toMessage
                               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
             }
 
@@ -227,12 +229,10 @@ module Response =
                         return Ok result
                     | Error error -> return Error error
                 with ex ->
-                    let message = ex |> Exception.toMessage
-
                     return
                         Error
                         <| Operation
-                            { Message = message
+                            { Message = ex |> Exception.toMessage
                               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
             }
 
@@ -254,12 +254,10 @@ module Response =
                                  Content = result }
                     | Error error -> return Error error
                 with ex ->
-                    let message = ex |> Exception.toMessage
-
                     return
                         Error
                         <| Operation
-                            { Message = message
+                            { Message = ex |> Exception.toMessage
                               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
             }
 
@@ -273,12 +271,10 @@ module Response =
                         return Ok result
                     | Error error -> return Error error
                 with ex ->
-                    let message = ex |> Exception.toMessage
-
                     return
                         Error
                         <| Operation
-                            { Message = message
+                            { Message = ex |> Exception.toMessage
                               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
             }
 
@@ -297,12 +293,10 @@ module Response =
                                  Content = result }
                     | Error error -> return Error error
                 with ex ->
-                    let message = ex |> Exception.toMessage
-
                     return
                         Error
                         <| Operation
-                            { Message = message
+                            { Message = ex |> Exception.toMessage
                               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
             }
 
@@ -316,12 +310,10 @@ module Response =
                         return Ok result
                     | Error error -> return Error error
                 with ex ->
-                    let message = ex |> Exception.toMessage
-
                     return
                         Error
                         <| Operation
-                            { Message = message
+                            { Message = ex |> Exception.toMessage
                               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
             }
 
@@ -333,11 +325,9 @@ module Response =
                     | Ok _ -> return Ok()
                     | Error error -> return Error error
                 with ex ->
-                    let message = ex |> Exception.toMessage
-
                     return
                         Error
                         <| Operation
-                            { Message = message
+                            { Message = ex |> Exception.toMessage
                               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
             }

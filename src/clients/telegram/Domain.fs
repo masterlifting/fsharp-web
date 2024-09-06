@@ -1,6 +1,9 @@
 module Web.Telegram.Domain
 
+open System.Collections.Concurrent
+
 type Client = Telegram.Bot.TelegramBotClient
+type ClientFactory = ConcurrentDictionary<string, Client>
 
 type ChatId = ChatId of string
 
