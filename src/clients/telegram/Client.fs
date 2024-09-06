@@ -6,7 +6,7 @@ open Web.Telegram.Domain
 
 
 let create (token: string) : Result<Client, Error'> =
-    Error <| NotImplemented "Web.Telegram.create"
+    Ok <| Client(token)
 
 let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
     async { return Error <| NotImplemented "Telegram.sendText." }
