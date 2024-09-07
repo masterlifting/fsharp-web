@@ -12,3 +12,8 @@ let create context =
     match context with
     | Domain.Http(url, headers) -> Http.Client.create url headers |> Result.map Type.Http
     | Domain.Telegram token -> Telegram.Client.create token |> Result.map Type.Telegram
+
+let listen ct context =
+    match context with
+    | Type.Telegram client -> Telegram.Client.listen ct client
+    | Type.Http client -> Http.Client.listen ct client

@@ -26,6 +26,9 @@ let create (token: string) =
             clients.TryAdd(token, client) |> ignore
             client)
 
+let listen (ct: CancellationToken) (client: Client) =
+    async { return Error <| NotImplemented "Telegram.listen." }
+
 let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
     async { return Error <| NotImplemented "Telegram.sendText." }
 
