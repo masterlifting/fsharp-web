@@ -5,6 +5,10 @@ open System.Collections.Concurrent
 type Client = Telegram.Bot.TelegramBotClient
 type ClientFactory = ConcurrentDictionary<string, Client>
 
+type CreateBy =
+    | Token of string
+    | TokenEnvVar of string
+
 type ChatId = ChatId of string
 
 type Text = { Id: int option; Value: string }
