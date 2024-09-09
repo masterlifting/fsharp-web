@@ -1,10 +1,14 @@
 module Web.Telegram.Client
 
+open System
 open System.Threading
 open Telegram.Bot
 open Infrastructure
+open Infrastructure.Logging
 open Web.Telegram.Domain
 open Telegram.Bot.Args
+open Telegram.Bot.Types.Enums
+open Telegram.Bot.Types.Enums
 
 let private clients = ClientFactory()
 
@@ -40,8 +44,51 @@ let create way =
     | Token token -> createByToken token
     | TokenEnvVar key -> createByTokenEnvVar key
 
-let listen (ct: CancellationToken) (client: Client) =
-    async { return Error <| NotImplemented "Telegram.listen." }
+let listen (ct: CancellationToken) (listener: Domain.Listener -> Async<Result<unit, Error'>>) (client: Client) =
+    async {
+        let rec innerLoop (offset: Nullable<int>) =
+            async {
+                if ct |> canceled then
+                    return
+                        Error
+                        <| Canceled(ErrorReason.buildLine (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__))
+                else
+                    try
+                        let! updates = client.GetUpdatesAsync(offset, 5) |> Async.AwaitTask
+
+                        updates
+                        |> Array.iter (fun update ->
+                            match update.Type with
+                            | UpdateType.Message ->
+                                { Id = update.Message.MessageId
+                                  ChatId = update.Message.Chat.Id
+                                  Value = update.Message.Text }
+                                |> Listener.Message
+                                |> listener
+                                |> Async.Ignore
+                            | UpdateType.EditedMessage -> update.EditedMessage |> ignore
+                            | UpdateType.ChannelPost -> update.ChannelPost |> ignore
+                            | UpdateType.EditedChannelPost -> update.EditedChannelPost |> ignore
+                            | UpdateType.CallbackQuery -> update.CallbackQuery |> ignore
+                            | UpdateType.InlineQuery -> update.InlineQuery |> ignore
+                            | UpdateType.ChosenInlineResult -> update.ChosenInlineResult |> ignore
+                            | UpdateType.ShippingQuery -> update.ShippingQuery |> ignore
+                            | UpdateType.PreCheckoutQuery -> update.PreCheckoutQuery |> ignore
+                            | UpdateType.Poll -> update.Poll |> ignore
+                            | UpdateType.PollAnswer -> update.PollAnswer |> ignore
+                            | UpdateType.MyChatMember -> update.MyChatMember |> ignore
+                            | UpdateType.ChatMember -> update.ChatMember |> ignore
+                            | UpdateType.Unknown -> ()
+                            | _ -> ())
+
+                        return! innerLoop (updates |> Array.map (fun update -> update.Id) |> Array.max)
+                    with ex ->
+                        ex |> Exception.toMessage |> Log.critical
+                        return! innerLoop offset
+            }
+
+        return Error <| NotImplemented "Telegram.listen."
+    }
 
 let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
     async { return Error <| NotImplemented "Telegram.sendText." }

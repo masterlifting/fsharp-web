@@ -85,7 +85,7 @@ let private getTaskResult ct key httpClient task =
 
     let rec innerLoop attempts =
         match attempts with
-        | 0 -> async { return Error <| Cancelled "Captcha. No attempts left." }
+        | 0 -> async { return Error <| Canceled "Captcha. No attempts left." }
         | _ ->
             if ct |> canceled then
                 innerLoop 0

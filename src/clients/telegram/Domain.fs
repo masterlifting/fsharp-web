@@ -1,7 +1,9 @@
 module Web.Telegram.Domain
 
 open System.Collections.Concurrent
+open Infrastructure
 open Telegram.Bot
+open System
 
 type Client = TelegramBotClient
 type ClientFactory = ConcurrentDictionary<string, Client>
@@ -10,9 +12,7 @@ type CreateBy =
     | Token of string
     | TokenEnvVar of string
 
-type ChatId = ChatId of string
-
-type Text = { Id: int option; Value: string }
+type Message<'a> = { Id: int; ChatId: int64; Value: 'a }
 
 type Button =
     { Id: int option
@@ -24,9 +24,19 @@ type ButtonsGroup =
       Buttons: Button seq
       Columns: int }
 
-type Request =
-    | Message of ChatId * Text
+type Send =
+    | Message of Message<string>
     | Buttons of ChatId * ButtonsGroup
+
+type Listener =
+    | Message of Message<string>
+    | Photo of Message<(float * float) seq>
+
+type ChatId = ChatId of string
+
+type Text = { Id: int option; Value: string }
+
+
 
 type Response =
     | Message of Text
