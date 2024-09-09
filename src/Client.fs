@@ -10,8 +10,8 @@ type Type =
 
 let create context =
     match context with
-    | Domain.Http(url, headers) -> Http.Client.create url headers |> Result.map Type.Http
     | Domain.Telegram way -> Telegram.Client.create way |> Result.map Type.Telegram
+    | Domain.Http(url, headers) -> Http.Client.create url headers |> Result.map Type.Http
 
 let listen ct context =
     match context with

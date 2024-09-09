@@ -1,8 +1,9 @@
 module Web.Telegram.Domain
 
 open System.Collections.Concurrent
+open Telegram.Bot
 
-type Client = Telegram.Bot.TelegramBotClient
+type Client = TelegramBotClient
 type ClientFactory = ConcurrentDictionary<string, Client>
 
 type CreateBy =

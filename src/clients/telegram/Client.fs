@@ -1,8 +1,10 @@
 module Web.Telegram.Client
 
 open System.Threading
+open Telegram.Bot
 open Infrastructure
 open Web.Telegram.Domain
+open Telegram.Bot.Args
 
 let private clients = ClientFactory()
 
