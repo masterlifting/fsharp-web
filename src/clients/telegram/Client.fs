@@ -56,30 +56,46 @@ let listen (ct: CancellationToken) (listener: Domain.Listener -> Async<Result<un
                     try
                         let! updates = client.GetUpdatesAsync(offset, 5) |> Async.AwaitTask
 
-                        updates
-                        |> Array.iter (fun update ->
-                            match update.Type with
-                            | UpdateType.Message ->
-                                { Id = update.Message.MessageId
-                                  ChatId = update.Message.Chat.Id
-                                  Value = update.Message.Text }
-                                |> Listener.Message
-                                |> listener
-                                |> Async.Ignore
-                            | UpdateType.EditedMessage -> update.EditedMessage |> ignore
-                            | UpdateType.ChannelPost -> update.ChannelPost |> ignore
-                            | UpdateType.EditedChannelPost -> update.EditedChannelPost |> ignore
-                            | UpdateType.CallbackQuery -> update.CallbackQuery |> ignore
-                            | UpdateType.InlineQuery -> update.InlineQuery |> ignore
-                            | UpdateType.ChosenInlineResult -> update.ChosenInlineResult |> ignore
-                            | UpdateType.ShippingQuery -> update.ShippingQuery |> ignore
-                            | UpdateType.PreCheckoutQuery -> update.PreCheckoutQuery |> ignore
-                            | UpdateType.Poll -> update.Poll |> ignore
-                            | UpdateType.PollAnswer -> update.PollAnswer |> ignore
-                            | UpdateType.MyChatMember -> update.MyChatMember |> ignore
-                            | UpdateType.ChatMember -> update.ChatMember |> ignore
-                            | UpdateType.Unknown -> ()
-                            | _ -> ())
+                        let tasks =
+                            updates
+                            |> Array.map (fun update ->
+                                match update.Type with
+                                | UpdateType.Message ->
+                                    match update.Message.Type with
+                                    | MessageType.Text ->
+                                        { Id = MessageId update.Message.MessageId
+                                          ChatId = ChatId update.Message.Chat.Id
+                                          Value = update.Message.Text }
+                                        |> Text
+                                        |> Listener.Message
+                                        |> listener
+                                    | MessageType.Photo ->
+                                        { Id = MessageId update.Message.MessageId
+                                          ChatId = ChatId update.Message.Chat.Id
+                                          Value =
+                                            update.Message.Photo
+                                            |> Array.map (fun photo ->
+                                                {| FileId = photo.FileId
+                                                   FileSize = photo.FileSize |> Option.ofNullable |})
+                                            |> Seq.ofArray }
+                                        |> Photo
+                                        |> Listener.Message
+                                        |> listener
+                                | UpdateType.EditedMessage ->
+                                    update.EditedMessage |> Listener.EditedMessage |> listener
+                                | UpdateType.ChannelPost -> update.ChannelPost |> ignore
+                                | UpdateType.EditedChannelPost -> update.EditedChannelPost |> ignore
+                                | UpdateType.CallbackQuery -> update.CallbackQuery |> ignore
+                                | UpdateType.InlineQuery -> update.InlineQuery |> ignore
+                                | UpdateType.ChosenInlineResult -> update.ChosenInlineResult |> ignore
+                                | UpdateType.ShippingQuery -> update.ShippingQuery |> ignore
+                                | UpdateType.PreCheckoutQuery -> update.PreCheckoutQuery |> ignore
+                                | UpdateType.Poll -> update.Poll |> ignore
+                                | UpdateType.PollAnswer -> update.PollAnswer |> ignore
+                                | UpdateType.MyChatMember -> update.MyChatMember |> ignore
+                                | UpdateType.ChatMember -> update.ChatMember |> ignore
+                                | UpdateType.Unknown -> ()
+                                | _ -> ())
 
                         return! innerLoop (updates |> Array.map (fun update -> update.Id) |> Array.max)
                     with ex ->
