@@ -11,5 +11,5 @@ type Client =
     | Telegram of Telegram.Domain.Client
 
 type Listener =
-    | Http of Telegram.Domain.Client
-    | Telegram of (Telegram.Domain.Listener -> Async<Result<unit, Error'>>)
+    | Http of Http.Domain.Client
+    | Telegram of Telegram.Domain.Client * (Telegram.Domain.Listener -> Async<Result<unit, Error'>>)

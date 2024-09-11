@@ -44,64 +44,64 @@ let create way =
     | Token token -> createByToken token
     | TokenEnvVar key -> createByTokenEnvVar key
 
-let listen (ct: CancellationToken) (listener: Domain.Listener -> Async<Result<unit, Error'>>) (client: Client) =
+let listen (ct: CancellationToken) (processor: Domain.Listener -> Async<Result<unit, Error'>>) (client: Client) =
     async {
-        let rec innerLoop (offset: Nullable<int>) =
-            async {
-                if ct |> canceled then
-                    return
-                        Error
-                        <| Canceled(ErrorReason.buildLine (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__))
-                else
-                    try
-                        let! updates = client.GetUpdatesAsync(offset, 5) |> Async.AwaitTask
+        //    let rec innerLoop (offset: Nullable<int>) =
+        //        async {
+        //            if ct |> canceled then
+        //                return
+        //                    Error
+        //                    <| Canceled(ErrorReason.buildLine (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__))
+        //            else
+        //                try
+        //                    let! updates = client.GetUpdatesAsync(offset, 5) |> Async.AwaitTask
 
-                        let tasks =
-                            updates
-                            |> Array.map (fun update ->
-                                match update.Type with
-                                | UpdateType.Message ->
-                                    match update.Message.Type with
-                                    | MessageType.Text ->
-                                        { Id = MessageId update.Message.MessageId
-                                          ChatId = ChatId update.Message.Chat.Id
-                                          Value = update.Message.Text }
-                                        |> Text
-                                        |> Listener.Message
-                                        |> listener
-                                    | MessageType.Photo ->
-                                        { Id = MessageId update.Message.MessageId
-                                          ChatId = ChatId update.Message.Chat.Id
-                                          Value =
-                                            update.Message.Photo
-                                            |> Array.map (fun photo ->
-                                                {| FileId = photo.FileId
-                                                   FileSize = photo.FileSize |> Option.ofNullable |})
-                                            |> Seq.ofArray }
-                                        |> Photo
-                                        |> Listener.Message
-                                        |> listener
-                                | UpdateType.EditedMessage ->
-                                    update.EditedMessage |> Listener.EditedMessage |> listener
-                                | UpdateType.ChannelPost -> update.ChannelPost |> ignore
-                                | UpdateType.EditedChannelPost -> update.EditedChannelPost |> ignore
-                                | UpdateType.CallbackQuery -> update.CallbackQuery |> ignore
-                                | UpdateType.InlineQuery -> update.InlineQuery |> ignore
-                                | UpdateType.ChosenInlineResult -> update.ChosenInlineResult |> ignore
-                                | UpdateType.ShippingQuery -> update.ShippingQuery |> ignore
-                                | UpdateType.PreCheckoutQuery -> update.PreCheckoutQuery |> ignore
-                                | UpdateType.Poll -> update.Poll |> ignore
-                                | UpdateType.PollAnswer -> update.PollAnswer |> ignore
-                                | UpdateType.MyChatMember -> update.MyChatMember |> ignore
-                                | UpdateType.ChatMember -> update.ChatMember |> ignore
-                                | UpdateType.Unknown -> ()
-                                | _ -> ())
+        //                    let tasks =
+        //                        updates
+        //                        |> Array.map (fun update ->
+        //                            match update.Type with
+        //                            | UpdateType.Message ->
+        //                                match update.Message.Type with
+        //                                | MessageType.Text ->
+        //                                    { Id = MessageId update.Message.MessageId
+        //                                      ChatId = ChatId update.Message.Chat.Id
+        //                                      Value = update.Message.Text }
+        //                                    |> Text
+        //                                    |> Listener.Message
+        //                                    |> processor
+        //                                | MessageType.Photo ->
+        //                                    { Id = MessageId update.Message.MessageId
+        //                                      ChatId = ChatId update.Message.Chat.Id
+        //                                      Value =
+        //                                        update.Message.Photo
+        //                                        |> Array.map (fun photo ->
+        //                                            {| FileId = photo.FileId
+        //                                               FileSize = photo.FileSize |> Option.ofNullable |})
+        //                                        |> Seq.ofArray }
+        //                                    |> Photo
+        //                                    |> Listener.Message
+        //                                    |> processor
+        //                            | UpdateType.EditedMessage ->
+        //                                update.EditedMessage |> Listener.EditedMessage |> processor
+        //                            | UpdateType.ChannelPost -> update.ChannelPost |> ignore
+        //                            | UpdateType.EditedChannelPost -> update.EditedChannelPost |> ignore
+        //                            | UpdateType.CallbackQuery -> update.CallbackQuery |> ignore
+        //                            | UpdateType.InlineQuery -> update.InlineQuery |> ignore
+        //                            | UpdateType.ChosenInlineResult -> update.ChosenInlineResult |> ignore
+        //                            | UpdateType.ShippingQuery -> update.ShippingQuery |> ignore
+        //                            | UpdateType.PreCheckoutQuery -> update.PreCheckoutQuery |> ignore
+        //                            | UpdateType.Poll -> update.Poll |> ignore
+        //                            | UpdateType.PollAnswer -> update.PollAnswer |> ignore
+        //                            | UpdateType.MyChatMember -> update.MyChatMember |> ignore
+        //                            | UpdateType.ChatMember -> update.ChatMember |> ignore
+        //                            | UpdateType.Unknown -> ()
+        //                            | _ -> ())
 
-                        return! innerLoop (updates |> Array.map (fun update -> update.Id) |> Array.max)
-                    with ex ->
-                        ex |> Exception.toMessage |> Log.critical
-                        return! innerLoop offset
-            }
+        //                    return! innerLoop (updates |> Array.map (fun update -> update.Id) |> Array.max)
+        //                with ex ->
+        //                    ex |> Exception.toMessage |> Log.critical
+        //                    return! innerLoop offset
+        //        }
 
         return Error <| NotImplemented "Telegram.listen."
     }
