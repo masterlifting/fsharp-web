@@ -44,7 +44,7 @@ let create way =
     | Token token -> createByToken token
     | TokenEnvVar key -> createByTokenEnvVar key
 
-let listen (ct: CancellationToken) (processor: Domain.Listener -> Async<Result<unit, Error'>>) (client: Client) =
+let listen (ct: CancellationToken) (receive: Domain.Listener -> Async<Result<unit, Error'>>) (client: Client) =
     async {
         //    let rec innerLoop (offset: Nullable<int>) =
         //        async {

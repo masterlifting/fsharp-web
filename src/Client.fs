@@ -10,5 +10,5 @@ let create context =
 
 let listen ct listener =
     match listener with
-    | Listener.Telegram(client, processor) -> client |> Telegram.Client.listen ct processor
+    | Listener.Telegram(client, receive) -> client |> Telegram.Client.listen ct receive
     | Listener.Http client -> client |> Http.Client.listen ct
