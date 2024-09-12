@@ -6,9 +6,6 @@ open Telegram.Bot
 open Infrastructure
 open Infrastructure.Logging
 open Web.Telegram.Domain
-open Telegram.Bot.Args
-open Telegram.Bot.Types.Enums
-open Telegram.Bot.Types.Enums
 
 let private clients = ClientFactory()
 
@@ -41,73 +38,39 @@ let private createByTokenEnvVar key =
 
 let create way =
     match way with
-    | Token token -> createByToken token
-    | TokenEnvVar key -> createByTokenEnvVar key
+    | Value token -> createByToken token
+    | EnvKey key -> createByTokenEnvVar key
 
-let listen (ct: CancellationToken) (receive: Domain.Listener -> Async<Result<unit, Error'>>) (client: Client) =
-    async {
-        //    let rec innerLoop (offset: Nullable<int>) =
-        //        async {
-        //            if ct |> canceled then
-        //                return
-        //                    Error
-        //                    <| Canceled(ErrorReason.buildLine (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__))
-        //            else
-        //                try
-        //                    let! updates = client.GetUpdatesAsync(offset, 5) |> Async.AwaitTask
+let listen (ct: CancellationToken) (receive: Receive.Data -> Async<Result<unit, Error'>>) (client: Client) =
+    let rec innerLoop (offset: Nullable<int>) =
+        async {
+            if ct |> canceled then
+                return
+                    Error
+                    <| Canceled(ErrorReason.buildLine (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__))
+            else
+                try
+                    "Listening..." |> Log.warning
 
-        //                    let tasks =
-        //                        updates
-        //                        |> Array.map (fun update ->
-        //                            match update.Type with
-        //                            | UpdateType.Message ->
-        //                                match update.Message.Type with
-        //                                | MessageType.Text ->
-        //                                    { Id = MessageId update.Message.MessageId
-        //                                      ChatId = ChatId update.Message.Chat.Id
-        //                                      Value = update.Message.Text }
-        //                                    |> Text
-        //                                    |> Listener.Message
-        //                                    |> processor
-        //                                | MessageType.Photo ->
-        //                                    { Id = MessageId update.Message.MessageId
-        //                                      ChatId = ChatId update.Message.Chat.Id
-        //                                      Value =
-        //                                        update.Message.Photo
-        //                                        |> Array.map (fun photo ->
-        //                                            {| FileId = photo.FileId
-        //                                               FileSize = photo.FileSize |> Option.ofNullable |})
-        //                                        |> Seq.ofArray }
-        //                                    |> Photo
-        //                                    |> Listener.Message
-        //                                    |> processor
-        //                            | UpdateType.EditedMessage ->
-        //                                update.EditedMessage |> Listener.EditedMessage |> processor
-        //                            | UpdateType.ChannelPost -> update.ChannelPost |> ignore
-        //                            | UpdateType.EditedChannelPost -> update.EditedChannelPost |> ignore
-        //                            | UpdateType.CallbackQuery -> update.CallbackQuery |> ignore
-        //                            | UpdateType.InlineQuery -> update.InlineQuery |> ignore
-        //                            | UpdateType.ChosenInlineResult -> update.ChosenInlineResult |> ignore
-        //                            | UpdateType.ShippingQuery -> update.ShippingQuery |> ignore
-        //                            | UpdateType.PreCheckoutQuery -> update.PreCheckoutQuery |> ignore
-        //                            | UpdateType.Poll -> update.Poll |> ignore
-        //                            | UpdateType.PollAnswer -> update.PollAnswer |> ignore
-        //                            | UpdateType.MyChatMember -> update.MyChatMember |> ignore
-        //                            | UpdateType.ChatMember -> update.ChatMember |> ignore
-        //                            | UpdateType.Unknown -> ()
-        //                            | _ -> ())
+                    let! updates = client.GetUpdatesAsync(offset, 5, 30) |> Async.AwaitTask
 
-        //                    return! innerLoop (updates |> Array.map (fun update -> update.Id) |> Array.max)
-        //                with ex ->
-        //                    ex |> Exception.toMessage |> Log.critical
-        //                    return! innerLoop offset
-        //        }
+                    let offset =
+                        match updates |> Array.isEmpty with
+                        | true -> offset
+                        | false ->
+                            $"Received {updates.Length} updates." |> Log.warning
+                            updates |> Array.maxBy _.Id |> (fun x -> x.Id + 1 |> Nullable)
 
-        return Error <| NotImplemented "Telegram.listen."
-    }
+                    return! innerLoop offset
+                with ex ->
+                    ex |> Exception.toMessage |> Log.critical
+                    return! innerLoop offset
+        }
 
-let sendText (chatId: ChatId) (text: Text) (ct: CancellationToken) =
-    async { return Error <| NotImplemented "Telegram.sendText." }
+    let defaultInt = Nullable<int>()
+    innerLoop defaultInt
 
-let sendButtonsGroups (chatId: ChatId) (buttonsGroup: ButtonsGroup) (ct: CancellationToken) =
-    async { return Error "Telegram.sendButtonGroups not implemented." }
+
+
+let send ct (message: Send.Message) (client: Client) =
+    async { return Error <| NotImplemented "Telegram.send." }

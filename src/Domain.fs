@@ -4,7 +4,7 @@ open Infrastructure
 
 type Context =
     | Http of string * Http.Domain.Headers
-    | Telegram of Telegram.Domain.CreateBy
+    | Telegram of Telegram.Domain.Token
 
 type Client =
     | Http of Http.Domain.Client
@@ -12,4 +12,4 @@ type Client =
 
 type Listener =
     | Http of Http.Domain.Client
-    | Telegram of Telegram.Domain.Client * (Telegram.Domain.Listener -> Async<Result<unit, Error'>>)
+    | Telegram of Telegram.Domain.Client * (Telegram.Domain.Receive.Data -> Async<Result<unit, Error'>>)
