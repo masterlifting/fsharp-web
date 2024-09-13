@@ -30,11 +30,6 @@ let private createByTokenEnvKey key =
     )
     |> Result.bind createByTokenValue
 
-let create way =
-    match way with
-    | Value token -> createByTokenValue token
-    | EnvKey key -> createByTokenEnvKey key
-
 module private Listener =
 
     let private createOffset updateIds =
@@ -103,6 +98,11 @@ module private Sender =
 module private Receiver =
     let receive ct (data: Receive.Data) (client: Client) =
         async { return Error <| NotImplemented "Web.Telegram.Client.Receive.receive." }
+
+let create token =
+    match token with
+    | Value token -> createByTokenValue token
+    | EnvKey key -> createByTokenEnvKey key
 
 let send = Sender.send
 let receive = Receiver.receive
