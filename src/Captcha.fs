@@ -111,7 +111,7 @@ let solveToInt ct (image: byte array) =
     match image.Length with
     | 0 -> async { return Error <| NotFound "Captcha. Image to solve." }
     | _ ->
-        Configuration.getEnvVar "AntiCaptchaApiKey"
+        Configuration.getEnvVar "ANTI_CAPTCHA_API_KEY"
         |> ResultAsync.wrap (fun keyOpt ->
             match keyOpt with
             | None -> async { return Error <| NotFound "AntiCaptcha. API Key." }

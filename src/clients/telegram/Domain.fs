@@ -21,7 +21,7 @@ type Message<'a> =
     { Id: MessageId
       ChatId: ChatId
       Value: 'a }
-
+    
 module Send =
     open System
 
