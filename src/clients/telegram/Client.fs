@@ -42,7 +42,7 @@ module private Listener =
 
     let private handleTasks botId (tasks: Async<Result<unit, Error'>> array) =
         async {
-            $"Telegram bot {botId} start handling messages: {tasks.Length}" |> Log.debug
+            $"Telegram bot {botId} start handling messages: {tasks.Length}" |> Log.trace
             let! results = tasks |> Async.Sequential
             $"Telegram bot {botId} handled messages: {results.Length}" |> Log.debug
 
@@ -53,7 +53,7 @@ module private Listener =
         }
         |> Async.Start
 
-    let listen ct receive (client: Client) =
+    let listen ct (receive: Receive.Data -> Async<Result<unit, Error'>>) (client: Client) =
         let limitMsg = 10
         let timeoutSec = Int32.MaxValue
 
@@ -74,7 +74,9 @@ module private Listener =
                             | true -> offset, Array.empty
                             | false ->
                                 updates
-                                |> Array.map (fun item -> (item.Id, Mapper.Receive.toData item |> receive))
+                                |> Array.map (fun update ->
+                                    let task = update |> Mapper.Receive.toData |> ResultAsync.wrap receive
+                                    update.Id, task)
                                 |> Array.unzip
                                 |> fun (ids, tasks) -> createOffset ids, tasks
 
