@@ -10,20 +10,13 @@ type Token =
     | Value of string
     | EnvKey of string
 
-type ChatId = ChatId of int64
-
-type MessageId =
-    | MessageId of int
-
-    static member Default = MessageId 0
-
-type Message<'a> =
-    { Id: MessageId
-      ChatId: ChatId
-      Value: 'a }
-    
 module Send =
     open System
+
+    type Message<'a> =
+        { Id: int option
+          ChatId: int64
+          Value: 'a }
 
     type Buttons =
         { Name: string
@@ -32,7 +25,7 @@ module Send =
     type WebApps =
         { Name: string; Data: Map<string, Uri> }
 
-    type Message =
+    type Data =
         | Text of Message<string>
         | Html of Message<string>
         | Buttons of Message<Buttons>
@@ -40,7 +33,9 @@ module Send =
 
 module Receive =
 
-    type Message =
+    type Message<'a> = { Id: int; ChatId: int64; Value: 'a }
+
+    type DataMessage =
         | Text of Message<string>
         | Photo of
             Message<
@@ -63,7 +58,6 @@ module Receive =
              >
 
     type ChannelPost = ChannelPost of Message<string>
-    type CallbackQuery = CallbackQuery of Message<string>
     type InlineQuery = InlineQuery of Message<string>
     type ChosenInlineResult = ChosenInlineResult of Message<string>
     type ShippingQuery = ShippingQuery of Message<string>
@@ -74,11 +68,11 @@ module Receive =
     type ChatMember = ChatMember of Message<string>
 
     type Data =
-        | Message of Message
-        | EditedMessage of Message
+        | Message of DataMessage
+        | EditedMessage of DataMessage
         | ChannelPost of ChannelPost
         | EditedChannelPost of ChannelPost
-        | CallbackQuery of CallbackQuery
+        | CallbackQuery of Message<string>
         | InlineQuery of InlineQuery
         | ChosenInlineResult of ChosenInlineResult
         | ShippingQuery of ShippingQuery

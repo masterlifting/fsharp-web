@@ -6,6 +6,7 @@ open Infrastructure
 open Infrastructure.Logging
 open Web.Telegram.Domain
 
+
 let private clients = ClientFactory()
 
 let private createByTokenValue token =
@@ -46,7 +47,6 @@ module private Listener =
             |> snd
             |> Seq.iter (fun error -> error.Message |> Log.critical)
         }
-        |> Async.Start
 
     let listen ct (receive: Receive.Data -> Async<Result<unit, Error'>>) (client: Client) =
         let limitMsg = 10
@@ -57,7 +57,7 @@ module private Listener =
         let rec innerLoop (offset: Nullable<int>) =
             async {
                 if ct |> canceled then
-                    return Error <| Canceled $"Telegram listener for {client.BotId} stopped."
+                    return Error <| Canceled $"Telegram bot {client.BotId} stopped."
                 else
                     try
                         let! updates =
@@ -76,7 +76,7 @@ module private Listener =
                                 |> fun (ids, tasks) -> createOffset ids, tasks
 
                         if tasks.Length > 0 then
-                            tasks |> handleTasks client.BotId
+                            tasks |> handleTasks client.BotId |> Async.Start
 
                         return! innerLoop offset
                     with ex ->
@@ -91,9 +91,58 @@ module private Listener =
         innerLoop defaultInt
 
 module private Sender =
+    open Web.Telegram.Domain.Send
+    open Telegram.Bot.Types.ReplyMarkups
 
-    let send ct (message: Send.Message) (client: Client) =
-        async { return Error <| NotImplemented "Web.Telegram.Client.Send.send." }
+    let private sentText ct (message: Message<string>) (client: Client) =
+        async {
+            try
+                let! result =
+                    client.SendTextMessageAsync(message.ChatId, message.Value, cancellationToken = ct)
+                    |> Async.AwaitTask
+
+                return Ok result.MessageId
+            with ex ->
+                return
+                    Error
+                    <| Operation
+                        { Message = ex |> Exception.toMessage
+                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+        }
+
+    let private sentButtons ct (message: Message<Buttons>) (client: Client) =
+        async {
+            try
+                let markup =
+                    message.Value.Data
+                    |> Map.map (fun key value -> InlineKeyboardButton.WithCallbackData(value, key))
+                    |> Map.values
+                    |> InlineKeyboardMarkup
+
+                let! result =
+                    client.SendTextMessageAsync(
+                        message.ChatId,
+                        message.Value.Name,
+                        replyMarkup = markup,
+                        cancellationToken = ct
+                    )
+                    |> Async.AwaitTask
+
+                return Ok result.MessageId
+
+            with ex ->
+                return
+                    Error
+                    <| Operation
+                        { Message = ex |> Exception.toMessage
+                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+        }
+
+    let send ct data client =
+        match data with
+        | Text msg -> client |> sentText ct msg
+        | Buttons msg -> client |> sentButtons ct msg
+        | _ -> async { return Error <| NotSupported $"Message type: {data}" }
 
 module private Receiver =
     let receive ct (data: Receive.Data) (client: Client) =
