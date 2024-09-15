@@ -91,6 +91,7 @@ module private Listener =
         innerLoop defaultInt
 
 module private Sender =
+    open System.Collections.Generic
     open Web.Telegram.Domain.Send
     open Telegram.Bot.Types.ReplyMarkups
 
@@ -110,14 +111,20 @@ module private Sender =
                           Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
 
+    let private toColumnedMarkup columns toResult data =
+        data
+        |> Seq.chunkBySize columns
+        |> Seq.map (Seq.map toResult)
+        |> InlineKeyboardMarkup
+
     let private sentButtons ct (message: Message<Buttons>) (client: Client) =
         async {
             try
+                let toCallbackData (item: KeyValuePair<string, string>) =
+                    InlineKeyboardButton.WithCallbackData(item.Value, item.Key)
+
                 let markup =
-                    message.Value.Data
-                    |> Map.map (fun key value -> InlineKeyboardButton.WithCallbackData(value, key))
-                    |> Map.values
-                    |> InlineKeyboardMarkup
+                    message.Value.Data |> toColumnedMarkup message.Value.Columns toCallbackData
 
                 let! result =
                     client.SendTextMessageAsync(

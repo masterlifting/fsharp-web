@@ -20,10 +20,13 @@ module Send =
 
     type Buttons =
         { Name: string
+          Columns: int
           Data: Map<string, string> }
 
     type WebApps =
-        { Name: string; Data: Map<string, Uri> }
+        { Name: string
+          Columns: int
+          Data: Map<string, Uri> }
 
     type Data =
         | Text of Message<string>
