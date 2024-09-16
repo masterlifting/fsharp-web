@@ -95,12 +95,43 @@ module private Sender =
     open Web.Telegram.Domain.Send
     open Telegram.Bot.Types.ReplyMarkups
 
+    let private sendMessage (chatId: int64, messageId, data, ct) (client: Client) =
+        match messageId with
+        | New ->
+            fun markup ->
+                match markup with
+                | Some markup -> client.SendTextMessageAsync(chatId, data, replyMarkup = markup, cancellationToken = ct)
+                | None -> client.SendTextMessageAsync(chatId, data, cancellationToken = ct)
+        | Reply id ->
+            let messageId = id |> Nullable
+
+            fun markup ->
+                match markup with
+                | Some markup ->
+                    client.SendTextMessageAsync(
+                        chatId,
+                        data,
+                        replyToMessageId = messageId,
+                        replyMarkup = markup,
+                        cancellationToken = ct
+                    )
+                | None ->
+                    client.SendTextMessageAsync(chatId, data, replyToMessageId = messageId, cancellationToken = ct)
+        | Replace messageId ->
+
+            fun markup ->
+                match markup with
+                | Some markup ->
+                    client.EditMessageTextAsync(chatId, messageId, data, replyMarkup = markup, cancellationToken = ct)
+                | None -> client.EditMessageTextAsync(chatId, messageId, data, cancellationToken = ct)
+
     let private sentText ct (message: Message<string>) (client: Client) =
         async {
             try
-                let! result =
-                    client.SendTextMessageAsync(message.ChatId, message.Value, cancellationToken = ct)
-                    |> Async.AwaitTask
+                let sendMessage =
+                    client |> sendMessage (message.ChatId, message.Id, message.Value, ct)
+
+                let! result = sendMessage None |> Async.AwaitTask
 
                 return Ok result.MessageId
             with ex ->
@@ -124,23 +155,14 @@ module private Sender =
                     InlineKeyboardButton.WithCallbackData(item.Value, item.Key)
 
                 let markup =
-                    message.Value.Data |> toColumnedMarkup message.Value.Columns toCallbackData
+                    message.Value.Data
+                    |> toColumnedMarkup message.Value.Columns toCallbackData
+                    |> Some
 
-                let messageId =
-                    if message.Id.IsSome then
-                        message.Id.Value |> Nullable
-                    else
-                        Nullable<int>()
+                let sendMessage =
+                    client |> sendMessage (message.ChatId, message.Id, message.Value.Name, ct)
 
-                let! result =
-                    client.SendTextMessageAsync(
-                        message.ChatId,
-                        message.Value.Name,
-                        replyToMessageId = messageId,
-                        replyMarkup = markup,
-                        cancellationToken = ct
-                    )
-                    |> Async.AwaitTask
+                let! result = sendMessage markup |> Async.AwaitTask
 
                 return Ok result.MessageId
 

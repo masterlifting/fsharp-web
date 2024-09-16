@@ -12,9 +12,14 @@ type Token =
 
 module Send =
     open System
+    
+    type MessageId =
+        | New
+        | Reply of int
+        | Replace of int
 
     type Message<'a> =
-        { Id: int option
+        { Id: MessageId
           ChatId: int64
           Value: 'a }
 
