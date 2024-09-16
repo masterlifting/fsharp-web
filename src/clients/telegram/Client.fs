@@ -126,10 +126,17 @@ module private Sender =
                 let markup =
                     message.Value.Data |> toColumnedMarkup message.Value.Columns toCallbackData
 
+                let messageId =
+                    if message.Id.IsSome then
+                        message.Id.Value |> Nullable
+                    else
+                        Nullable<int>()
+
                 let! result =
                     client.SendTextMessageAsync(
                         message.ChatId,
                         message.Value.Name,
+                        replyToMessageId = messageId,
                         replyMarkup = markup,
                         cancellationToken = ct
                     )
