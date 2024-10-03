@@ -94,7 +94,7 @@ let private getTaskResult ct key httpClient task =
                 |> Http.Client.Request.post ct request content
                 |> Http.Client.Response.String.readContent ct
                 |> Http.Client.Response.String.fromJson<TaskResult>
-                |> ResultAsync.bind' (handleTaskResult innerLoop (attempts - 1))
+                |> ResultAsync.bindAsync (handleTaskResult innerLoop (attempts - 1))
 
     innerLoop 5
 
@@ -105,7 +105,7 @@ let private createTask ct key httpClient image =
     |> Http.Client.Request.post ct request content
     |> Http.Client.Response.String.readContent ct
     |> Http.Client.Response.String.fromJson<Task>
-    |> ResultAsync.bind' (getTaskResult ct key httpClient)
+    |> ResultAsync.bindAsync (getTaskResult ct key httpClient)
 
 let solveToInt ct (image: byte array) =
     match image.Length with
@@ -114,7 +114,7 @@ let solveToInt ct (image: byte array) =
         Configuration.getEnvVar "ANTI_CAPTCHA_API_KEY"
         |> ResultAsync.wrap (fun keyOpt ->
             match keyOpt with
-            | None -> async { return Error <| NotFound "AntiCaptcha. API Key." }
+            | None -> async { return Error <| NotFound "ANTI_CAPTCHA_API_KEY" }
             | Some key ->
 
                 let createHttpClient url = Http.Client.create url None
