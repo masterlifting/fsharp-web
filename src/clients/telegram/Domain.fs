@@ -10,9 +10,9 @@ type Token =
     | Value of string
     | EnvKey of string
 
-module Send =
+module Producer =
     open System
-    
+
     type MessageId =
         | New
         | Reply of int
@@ -33,17 +33,17 @@ module Send =
           Columns: int
           Data: Map<string, Uri> }
 
-    type Data =
+    type MessagePayload =
         | Text of Message<string>
         | Html of Message<string>
         | Buttons of Message<Buttons>
         | WebApps of Message<WebApps>
 
-module Receive =
+module Consumer =
 
     type Message<'a> = { Id: int; ChatId: int64; Value: 'a }
 
-    type DataMessage =
+    type MessagePayload =
         | Text of Message<string>
         | Photo of
             Message<
@@ -75,9 +75,9 @@ module Receive =
     type MyChatMember = MyChatMember of Message<string>
     type ChatMember = ChatMember of Message<string>
 
-    type Data =
-        | Message of DataMessage
-        | EditedMessage of DataMessage
+    type Message =
+        | Payload of MessagePayload
+        | EditedMessage of MessagePayload
         | ChannelPost of ChannelPost
         | EditedChannelPost of ChannelPost
         | CallbackQuery of Message<string>

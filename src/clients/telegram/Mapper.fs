@@ -7,7 +7,7 @@ open Telegram.Bot.Types
 //module internal Send =
 
 module internal Receive =
-    open Web.Telegram.Domain.Receive
+    open Web.Telegram.Domain.Consumer
 
     let private toMessage (message: Types.Message) =
         match message.Type with
@@ -17,7 +17,7 @@ module internal Receive =
                 { Id = message.MessageId
                   ChatId = message.Chat.Id
                   Value = text }
-                |> Text
+                |> Payload
                 |> Ok
             | _ -> Error <| NotFound "Message text"
         | _ -> Error <| NotSupported $"Message type: {message.Type}"
@@ -31,11 +31,11 @@ module internal Receive =
             |> Ok
         | _ -> Error <| NotFound "Callback query data"
 
-    let toData (update: Update) : Result<Data, Error'> =
+    let toData (update: Update) : Result<Message, Error'> =
         match update.Type with
-        | Enums.UpdateType.Message -> update.Message |> toMessage |> Result.map Message
-        | Enums.UpdateType.EditedMessage -> update.EditedMessage |> toMessage |> Result.map Message
-        | Enums.UpdateType.ChannelPost -> update.ChannelPost |> toMessage |> Result.map Message
-        | Enums.UpdateType.EditedChannelPost -> update.EditedChannelPost |> toMessage |> Result.map Message
+        | Enums.UpdateType.Message -> update.Message |> toMessage |> Result.map Payload
+        | Enums.UpdateType.EditedMessage -> update.EditedMessage |> toMessage |> Result.map Payload
+        | Enums.UpdateType.ChannelPost -> update.ChannelPost |> toMessage |> Result.map Payload
+        | Enums.UpdateType.EditedChannelPost -> update.EditedChannelPost |> toMessage |> Result.map Payload
         | Enums.UpdateType.CallbackQuery -> update.CallbackQuery |> toCallbackQuery |> Result.map CallbackQuery
         | _ -> Error <| NotSupported $"Update type: {update.Type}"

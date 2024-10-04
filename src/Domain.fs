@@ -12,4 +12,4 @@ type Client =
 
 type Listener =
     | Http of Http.Domain.Client
-    | Telegram of Telegram.Domain.Client * (Telegram.Domain.Receive.Data -> Async<Result<unit, Error'>>)
+    | Telegram of Telegram.Domain.Client * (Telegram.Domain.Consumer.Message -> Async<Result<unit, Error'>>)

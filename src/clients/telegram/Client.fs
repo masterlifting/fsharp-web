@@ -48,7 +48,7 @@ module private Listener =
             |> Seq.iter (fun error -> error.Message |> Log.critical)
         }
 
-    let listen ct (receive: Receive.Data -> Async<Result<unit, Error'>>) (client: Client) =
+    let listen ct (receive: Consumer.Message -> Async<Result<unit, Error'>>) (client: Client) =
         let limitMsg = 10
         let timeoutSec = Int32.MaxValue
 
@@ -92,7 +92,7 @@ module private Listener =
 
 module private Sender =
     open System.Collections.Generic
-    open Web.Telegram.Domain.Send
+    open Web.Telegram.Domain.Producer
     open Telegram.Bot.Types.ReplyMarkups
 
     let private sendMessage (chatId: int64, messageId, data, ct) (client: Client) =
@@ -181,7 +181,7 @@ module private Sender =
         | _ -> async { return Error <| NotSupported $"Message type: {data}" }
 
 module private Receiver =
-    let receive ct (data: Receive.Data) (client: Client) =
+    let receive ct (data: Consumer.Message) (client: Client) =
         async { return Error <| NotImplemented "Web.Telegram.Client.Receive.receive." }
 
 let create token =
