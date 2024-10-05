@@ -13,15 +13,12 @@ type Token =
 module Producer =
     open System
 
-    type MessageId =
+    type DtoId =
         | New
         | Reply of int
         | Replace of int
 
-    type Message<'a> =
-        { Id: MessageId
-          ChatId: int64
-          Value: 'a }
+    type Dto<'a> = { Id: DtoId; ChatId: int64; Value: 'a }
 
     type Buttons =
         { Name: string
@@ -33,60 +30,50 @@ module Producer =
           Columns: int
           Data: Map<string, Uri> }
 
-    type MessagePayload =
-        | Text of Message<string>
-        | Html of Message<string>
-        | Buttons of Message<Buttons>
-        | WebApps of Message<WebApps>
+    type Data =
+        | Text of Dto<string>
+        | Html of Dto<string>
+        | Buttons of Dto<Buttons>
+        | WebApps of Dto<WebApps>
 
 module Consumer =
 
-    type Message<'a> = { Id: int; ChatId: int64; Value: 'a }
+    type Dto<'a> = { Id: int; ChatId: int64; Value: 'a }
 
-    type MessagePayload =
-        | Text of Message<string>
-        | Photo of
-            Message<
-                {| FileId: string
-                   FileSize: int64 option |} seq
-             >
-        | Audio of
-            Message<
-                {| FileId: int
-                   FileSize: int
-                   Title: string
-                   MimeType: string |}
-             >
-        | Video of
-            Message<
-                {| FileId: int
-                   FileSize: int
-                   FileName: string
-                   MimeType: string |}
-             >
+    type Photo =
+        { FileId: string
+          FileSize: int64 option }
 
-    type ChannelPost = ChannelPost of Message<string>
-    type InlineQuery = InlineQuery of Message<string>
-    type ChosenInlineResult = ChosenInlineResult of Message<string>
-    type ShippingQuery = ShippingQuery of Message<string>
-    type PreCheckoutQuery = PreCheckoutQuery of Message<string>
-    type Poll = Poll of Message<string>
-    type PollAnswer = PollAnswer of Message<string>
-    type MyChatMember = MyChatMember of Message<string>
-    type ChatMember = ChatMember of Message<string>
+    type Audio =
+        { FileId: int
+          FileSize: int
+          Title: string
+          MimeType: string }
+
+    type Video =
+        { FileId: int
+          FileSize: int
+          FileName: string
+          MimeType: string }
 
     type Message =
-        | Payload of MessagePayload
-        | EditedMessage of MessagePayload
-        | ChannelPost of ChannelPost
-        | EditedChannelPost of ChannelPost
-        | CallbackQuery of Message<string>
-        | InlineQuery of InlineQuery
-        | ChosenInlineResult of ChosenInlineResult
-        | ShippingQuery of ShippingQuery
-        | PreCheckoutQuery of PreCheckoutQuery
-        | Poll of Poll
-        | PollAnswer of PollAnswer
-        | MyChatMember of MyChatMember
-        | ChatMember of ChatMember
-        | Unknown of Message<string>
+        | Text of Dto<string>
+        | Photo of Dto<Photo seq>
+        | Audio of Dto<Audio>
+        | Video of Dto<Video>
+
+    type Data =
+        | Message of Message
+        | EditedMessage of Message
+        | ChannelPost of Dto<string>
+        | EditedChannelPost of Dto<string>
+        | CallbackQuery of Dto<string>
+        | InlineQuery of Dto<string>
+        | ChosenInlineResult of Dto<string>
+        | ShippingQuery of Dto<string>
+        | PreCheckoutQuery of Dto<string>
+        | Poll of Dto<string>
+        | PollAnswer of Dto<string>
+        | MyChatMember of Dto<string>
+        | ChatMember of Dto<string>
+        | Unknown of Dto<string>

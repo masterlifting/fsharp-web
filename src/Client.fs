@@ -9,8 +9,7 @@ let create context =
     | Context.Telegram way -> Telegram.Client.create way |> Result.map Client.Telegram
     | Context.Http(url, headers) -> Http.Client.create url headers |> Result.map Client.Http
 
-let listen ct =
-    ResultAsync.wrap (fun listener ->
-        match listener with
-        | Listener.Telegram(client, receive) -> client |> Telegram.Client.listen ct receive
-        | Listener.Http client -> client |> Http.Client.listen ct)
+let consume ct =
+    ResultAsync.wrap (function
+        | Telegram(client, handle) -> client |> Telegram.Client.Consumer.start ct handle
+        | Http client -> client |> Http.Client.Consumer.start ct)

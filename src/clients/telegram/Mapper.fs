@@ -4,9 +4,7 @@ open Telegram.Bot
 open Infrastructure
 open Telegram.Bot.Types
 
-//module internal Send =
-
-module internal Receive =
+module internal Consumer =
     open Web.Telegram.Domain.Consumer
 
     let private toMessage (message: Types.Message) =
@@ -17,25 +15,27 @@ module internal Receive =
                 { Id = message.MessageId
                   ChatId = message.Chat.Id
                   Value = text }
-                |> Payload
+                |> Text
+                |> Message
                 |> Ok
             | _ -> Error <| NotFound "Message text"
         | _ -> Error <| NotSupported $"Message type: {message.Type}"
 
-    let private toCallbackQuery (query: Types.CallbackQuery) =
+    let private toCallbackQuery (query: CallbackQuery) =
         match query.Data with
         | AP.IsString data ->
             { Id = query.Message.MessageId
               ChatId = query.From.Id
               Value = data }
+            |> CallbackQuery
             |> Ok
         | _ -> Error <| NotFound "Callback query data"
 
-    let toData (update: Update) : Result<Message, Error'> =
+    let toData (update: Update) : Result<Data, Error'> =
         match update.Type with
-        | Enums.UpdateType.Message -> update.Message |> toMessage |> Result.map Payload
-        | Enums.UpdateType.EditedMessage -> update.EditedMessage |> toMessage |> Result.map Payload
-        | Enums.UpdateType.ChannelPost -> update.ChannelPost |> toMessage |> Result.map Payload
-        | Enums.UpdateType.EditedChannelPost -> update.EditedChannelPost |> toMessage |> Result.map Payload
-        | Enums.UpdateType.CallbackQuery -> update.CallbackQuery |> toCallbackQuery |> Result.map CallbackQuery
+        | Enums.UpdateType.Message -> update.Message |> toMessage
+        | Enums.UpdateType.EditedMessage -> update.EditedMessage |> toMessage
+        | Enums.UpdateType.ChannelPost -> update.ChannelPost |> toMessage
+        | Enums.UpdateType.EditedChannelPost -> update.EditedChannelPost |> toMessage
+        | Enums.UpdateType.CallbackQuery -> update.CallbackQuery |> toCallbackQuery
         | _ -> Error <| NotSupported $"Update type: {update.Type}"

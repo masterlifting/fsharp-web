@@ -6,7 +6,6 @@ open Infrastructure
 open Infrastructure.Logging
 open Web.Telegram.Domain
 
-
 let private clients = ClientFactory()
 
 let private createByTokenValue token =
@@ -31,7 +30,12 @@ let private createByTokenEnvKey key =
     )
     |> Result.bind createByTokenValue
 
-module private Listener =
+let create token =
+    match token with
+    | Value token -> createByTokenValue token
+    | EnvKey key -> createByTokenEnvKey key
+
+module Consumer =
 
     let private createOffset updateIds =
         updateIds |> Array.max |> (fun id -> id + 1 |> Nullable)
@@ -48,7 +52,7 @@ module private Listener =
             |> Seq.iter (fun error -> error.Message |> Log.critical)
         }
 
-    let listen ct (receive: Consumer.Message -> Async<Result<unit, Error'>>) (client: Client) =
+    let start ct (handle: Consumer.Data -> Async<Result<unit, Error'>>) (client: Client) =
         let limitMsg = 10
         let timeoutSec = Int32.MaxValue
 
@@ -70,7 +74,7 @@ module private Listener =
                             | false ->
                                 updates
                                 |> Array.map (fun update ->
-                                    let task = update |> Mapper.Receive.toData |> ResultAsync.wrap receive
+                                    let task = update |> Mapper.Consumer.toData |> ResultAsync.wrap handle
                                     update.Id, task)
                                 |> Array.unzip
                                 |> fun (ids, tasks) -> createOffset ids, tasks
@@ -90,18 +94,19 @@ module private Listener =
         let defaultInt = Nullable<int>()
         innerLoop defaultInt
 
-module private Sender =
+module Producer =
     open System.Collections.Generic
     open Web.Telegram.Domain.Producer
     open Telegram.Bot.Types.ReplyMarkups
 
-    let private sendMessage (chatId: int64, messageId, data, ct) (client: Client) =
-        match messageId with
+    let private send ct (dto: Dto<string>) (client: Client) =
+        match dto.Id with
         | New ->
             fun markup ->
                 match markup with
-                | Some markup -> client.SendTextMessageAsync(chatId, data, replyMarkup = markup, cancellationToken = ct)
-                | None -> client.SendTextMessageAsync(chatId, data, cancellationToken = ct)
+                | Some markup ->
+                    client.SendTextMessageAsync(dto.ChatId, dto.Value, replyMarkup = markup, cancellationToken = ct)
+                | None -> client.SendTextMessageAsync(dto.ChatId, dto.Value, cancellationToken = ct)
         | Reply id ->
             let messageId = id |> Nullable
 
@@ -109,86 +114,88 @@ module private Sender =
                 match markup with
                 | Some markup ->
                     client.SendTextMessageAsync(
-                        chatId,
-                        data,
+                        dto.ChatId,
+                        dto.Value,
                         replyToMessageId = messageId,
                         replyMarkup = markup,
                         cancellationToken = ct
                     )
                 | None ->
-                    client.SendTextMessageAsync(chatId, data, replyToMessageId = messageId, cancellationToken = ct)
+                    client.SendTextMessageAsync(
+                        dto.ChatId,
+                        dto.Value,
+                        replyToMessageId = messageId,
+                        cancellationToken = ct
+                    )
         | Replace messageId ->
 
             fun markup ->
                 match markup with
                 | Some markup ->
-                    client.EditMessageTextAsync(chatId, messageId, data, replyMarkup = markup, cancellationToken = ct)
-                | None -> client.EditMessageTextAsync(chatId, messageId, data, cancellationToken = ct)
+                    client.EditMessageTextAsync(
+                        dto.ChatId,
+                        messageId,
+                        dto.Value,
+                        replyMarkup = markup,
+                        cancellationToken = ct
+                    )
+                | None -> client.EditMessageTextAsync(dto.ChatId, messageId, dto.Value, cancellationToken = ct)
 
-    let private sentText ct (message: Message<string>) (client: Client) =
-        async {
-            try
-                let sendMessage =
-                    client |> sendMessage (message.ChatId, message.Id, message.Value, ct)
+    module private Produce =
 
-                let! result = sendMessage None |> Async.AwaitTask
+        let text ct (dto: Dto<string>) (client: Client) =
+            async {
+                try
+                    let sendMessage = client |> send ct dto
 
-                return Ok result.MessageId
-            with ex ->
-                return
-                    Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
-        }
+                    let! result = sendMessage None |> Async.AwaitTask
 
-    let private toColumnedMarkup columns toResult data =
-        data
-        |> Seq.chunkBySize columns
-        |> Seq.map (Seq.map toResult)
-        |> InlineKeyboardMarkup
+                    return Ok result.MessageId
+                with ex ->
+                    return
+                        Error
+                        <| Operation
+                            { Message = ex |> Exception.toMessage
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+            }
 
-    let private sentButtons ct (message: Message<Buttons>) (client: Client) =
-        async {
-            try
-                let toCallbackData (item: KeyValuePair<string, string>) =
-                    InlineKeyboardButton.WithCallbackData(item.Value, item.Key)
+        let buttons ct (dto: Dto<Buttons>) (client: Client) =
 
-                let markup =
-                    message.Value.Data
-                    |> toColumnedMarkup message.Value.Columns toCallbackData
-                    |> Some
+            let inline toColumnedMarkup columns toResult data =
+                data
+                |> Seq.chunkBySize columns
+                |> Seq.map (Seq.map toResult)
+                |> InlineKeyboardMarkup
 
-                let sendMessage =
-                    client |> sendMessage (message.ChatId, message.Id, message.Value.Name, ct)
+            async {
+                try
+                    let toCallbackData (item: KeyValuePair<string, string>) =
+                        InlineKeyboardButton.WithCallbackData(item.Value, item.Key)
 
-                let! result = sendMessage markup |> Async.AwaitTask
+                    let markup =
+                        dto.Value.Data |> toColumnedMarkup dto.Value.Columns toCallbackData |> Some
 
-                return Ok result.MessageId
+                    let dto =
+                        { Id = dto.Id
+                          ChatId = dto.ChatId
+                          Value = dto.Value.Name }
 
-            with ex ->
-                return
-                    Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
-        }
+                    let sendMessage = client |> send ct dto
 
-    let send ct data client =
+                    let! result = sendMessage markup |> Async.AwaitTask
+
+                    return Ok result.MessageId
+
+                with ex ->
+                    return
+                        Error
+                        <| Operation
+                            { Message = ex |> Exception.toMessage
+                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+            }
+
+    let produce ct data client =
         match data with
-        | Text msg -> client |> sentText ct msg
-        | Buttons msg -> client |> sentButtons ct msg
+        | Text dto -> client |> Produce.text ct dto
+        | Buttons dto -> client |> Produce.buttons ct dto
         | _ -> async { return Error <| NotSupported $"Message type: {data}" }
-
-module private Receiver =
-    let receive ct (data: Consumer.Message) (client: Client) =
-        async { return Error <| NotImplemented "Web.Telegram.Client.Receive.receive." }
-
-let create token =
-    match token with
-    | Value token -> createByTokenValue token
-    | EnvKey key -> createByTokenEnvKey key
-
-let send = Sender.send
-let receive = Receiver.receive
-let listen = Listener.listen

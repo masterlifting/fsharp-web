@@ -135,8 +135,9 @@ let create (baseUrl: string) (headers: Headers) =
                     clients.TryAdd(baseUrl, client) |> ignore
                     client)))
 
-let listen (ct: CancellationToken) (client: Client) =
-    async { return Error <| NotSupported "Http.listen." }
+module Consumer =
+    let start (ct: CancellationToken) (client: Client) =
+        async { return Error <| NotSupported "Http.listen." }
 
 [<RequireQualifiedAccess>]
 module Request =

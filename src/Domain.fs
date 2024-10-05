@@ -10,6 +10,6 @@ type Client =
     | Http of Http.Domain.Client
     | Telegram of Telegram.Domain.Client
 
-type Listener =
+type Consumer =
     | Http of Http.Domain.Client
-    | Telegram of Telegram.Domain.Client * (Telegram.Domain.Consumer.Message -> Async<Result<unit, Error'>>)
+    | Telegram of Telegram.Domain.Client * (Telegram.Domain.Consumer.Data -> Async<Result<unit, Error'>>)
