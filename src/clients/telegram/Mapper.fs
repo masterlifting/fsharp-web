@@ -13,7 +13,7 @@ module internal Consumer =
             match message.Text with
             | AP.IsString text ->
                 { Id = message.MessageId
-                  ChatId = message.Chat.Id
+                  ChatId = message.Chat.Id |> Domain.ChatId
                   Value = text }
                 |> Text
                 |> Message
@@ -25,7 +25,7 @@ module internal Consumer =
         match query.Data with
         | AP.IsString data ->
             { Id = query.Message.MessageId
-              ChatId = query.From.Id
+              ChatId = query.From.Id |> Domain.ChatId
               Value = data }
             |> CallbackQuery
             |> Ok

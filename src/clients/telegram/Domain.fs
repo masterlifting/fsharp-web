@@ -10,6 +10,13 @@ type Token =
     | Value of string
     | EnvKey of string
 
+type ChatId =
+    | ChatId of int64
+
+    member this.Value =
+        match this with
+        | ChatId value -> value
+
 module Producer =
     open System
 
@@ -18,7 +25,8 @@ module Producer =
         | Reply of int
         | Replace of int
 
-    type Dto<'a> = { Id: DtoId; ChatId: int64; Value: 'a }
+    type Dto<'a> =
+        { Id: DtoId; ChatId: ChatId; Value: 'a }
 
     type Buttons =
         { Name: string
@@ -37,8 +45,7 @@ module Producer =
         | WebApps of Dto<WebApps>
 
 module Consumer =
-
-    type Dto<'a> = { Id: int; ChatId: int64; Value: 'a }
+    type Dto<'a> = { Id: int; ChatId: ChatId; Value: 'a }
 
     type Photo =
         { FileId: string

@@ -105,8 +105,8 @@ module Producer =
             fun markup ->
                 match markup with
                 | Some markup ->
-                    client.SendTextMessageAsync(dto.ChatId, dto.Value, replyMarkup = markup, cancellationToken = ct)
-                | None -> client.SendTextMessageAsync(dto.ChatId, dto.Value, cancellationToken = ct)
+                    client.SendTextMessageAsync(dto.ChatId.Value, dto.Value, replyMarkup = markup, cancellationToken = ct)
+                | None -> client.SendTextMessageAsync(dto.ChatId.Value, dto.Value, cancellationToken = ct)
         | Reply id ->
             let messageId = id |> Nullable
 
@@ -114,7 +114,7 @@ module Producer =
                 match markup with
                 | Some markup ->
                     client.SendTextMessageAsync(
-                        dto.ChatId,
+                        dto.ChatId.Value,
                         dto.Value,
                         replyToMessageId = messageId,
                         replyMarkup = markup,
@@ -122,7 +122,7 @@ module Producer =
                     )
                 | None ->
                     client.SendTextMessageAsync(
-                        dto.ChatId,
+                        dto.ChatId.Value,
                         dto.Value,
                         replyToMessageId = messageId,
                         cancellationToken = ct
@@ -133,13 +133,13 @@ module Producer =
                 match markup with
                 | Some markup ->
                     client.EditMessageTextAsync(
-                        dto.ChatId,
+                        dto.ChatId.Value,
                         messageId,
                         dto.Value,
                         replyMarkup = markup,
                         cancellationToken = ct
                     )
-                | None -> client.EditMessageTextAsync(dto.ChatId, messageId, dto.Value, cancellationToken = ct)
+                | None -> client.EditMessageTextAsync(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
 
     module private Produce =
 
