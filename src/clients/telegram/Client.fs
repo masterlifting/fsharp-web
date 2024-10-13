@@ -105,7 +105,12 @@ module Producer =
             fun markup ->
                 match markup with
                 | Some markup ->
-                    client.SendTextMessageAsync(dto.ChatId.Value, dto.Value, replyMarkup = markup, cancellationToken = ct)
+                    client.SendTextMessageAsync(
+                        dto.ChatId.Value,
+                        dto.Value,
+                        replyMarkup = markup,
+                        cancellationToken = ct
+                    )
                 | None -> client.SendTextMessageAsync(dto.ChatId.Value, dto.Value, cancellationToken = ct)
         | Reply id ->
             let messageId = id |> Nullable
