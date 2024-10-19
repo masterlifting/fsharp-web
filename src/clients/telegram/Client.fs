@@ -49,7 +49,7 @@ module Consumer =
             results
             |> Result.unzip
             |> snd
-            |> Seq.iter (fun error -> error.Message |> Log.critical)
+            |> Seq.iter (fun error -> $"Telegram bot {botId} " + error.Message |> Log.critical)
         }
 
     let start ct (handle: Consumer.Data -> Async<Result<unit, Error'>>) (client: Client) =
