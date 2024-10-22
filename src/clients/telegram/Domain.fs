@@ -17,6 +17,10 @@ type ChatId =
         match this with
         | ChatId value -> value
 
+type Payload =
+    { Route: string
+      Data: Map<string, string> }
+    
 module Producer =
     open System
 
