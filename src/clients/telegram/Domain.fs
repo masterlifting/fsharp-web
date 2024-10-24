@@ -16,7 +16,7 @@ type ChatId =
     member this.Value =
         match this with
         | ChatId value -> value
-    
+
 module Producer =
     open System
 
