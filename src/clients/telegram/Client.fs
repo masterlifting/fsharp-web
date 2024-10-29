@@ -203,4 +203,4 @@ module Producer =
         match data with
         | Text dto -> client |> Produce.text ct dto
         | Buttons dto -> client |> Produce.buttons ct dto
-        | _ -> async { return Error <| NotSupported $"Message type: {data}" }
+        | _ -> $"{data}" |> NotSupported |> Error |> async.Return
