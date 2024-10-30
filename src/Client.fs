@@ -11,5 +11,5 @@ let create context =
 
 let consume ct =
     ResultAsync.wrap (function
-        | Telegram(client, handle) -> client |> Telegram.Client.Consumer.start ct handle
+        | Telegram(client, handle) -> client |> Telegram.Consumer.start ct handle
         | Http client -> client |> Http.Client.Consumer.start ct)

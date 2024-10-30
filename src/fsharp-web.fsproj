@@ -7,6 +7,8 @@
     <Compile Include="clients\telegram\Domain.fs" />
     <Compile Include="clients\telegram\Mapper.fs" />
     <Compile Include="clients\telegram\Client.fs" />
+    <Compile Include="clients\telegram\Consumer.fs" />
+    <Compile Include="clients\telegram\Producer.fs" />
     <Compile Include="clients\http\Domain.fs" />
     <Compile Include="clients\http\Client.fs" />
     <Compile Include="Domain.fs" />
