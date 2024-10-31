@@ -25,7 +25,7 @@ let start ct (handle: Consumer.Data -> Async<Result<int, Error'>>) (client: Clie
     let limitMsg = 10
     let timeoutSec = Int32.MaxValue
 
-    $"Telegram bot {client.BotId} started." |> Log.warning
+    $"Telegram bot {client.BotId} started." |> Log.info
 
     let rec innerLoop (offset: Nullable<int>) =
         async {
