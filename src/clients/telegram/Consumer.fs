@@ -22,6 +22,7 @@ let private handleTasks botId (tasks: Async<Result<int, Error'>> array) =
     }
 
 let start ct (handle: Consumer.Data -> Async<Result<int, Error'>>) (client: Client) =
+    let mutable restartAttempts = 3
     let limitMsg = 10
     let timeoutSec = Int32.MaxValue
 
@@ -53,11 +54,18 @@ let start ct (handle: Consumer.Data -> Async<Result<int, Error'>>) (client: Clie
 
                     return! innerLoop offset
                 with ex ->
-                    return
-                        Error
-                        <| Operation
-                            { Message = ex |> Exception.toMessage
-                              Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+                    let error = $"Telegram bot {client.BotId}. " + (ex |> Exception.toMessage)
+
+                    if restartAttempts > 0 then
+                        restartAttempts <- restartAttempts - 1
+                        error + " Restarting..." |> Log.critical
+                        return! innerLoop offset
+                    else
+                        return
+                            Error
+                            <| Operation
+                                { Message = error
+                                  Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
 
     let defaultInt = Nullable<int>()
