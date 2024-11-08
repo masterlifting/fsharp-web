@@ -9,29 +9,29 @@ open Web.Telegram.Domain
 let private createOffset updateIds =
     updateIds |> Array.max |> (fun id -> id + 1 |> Nullable)
 
-let private handleTasks botId (tasks: Async<Result<int, Error'>> array) =
+let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
     async {
-        $"Telegram bot {botId} start handling messages: {tasks.Length}" |> Log.trace
+        $"{bot} start handling messages: {tasks.Length}" |> Log.trace
         let! results = tasks |> Async.Sequential
-        $"Telegram bot {botId} handled messages: {results.Length}" |> Log.debug
+        $"{bot} handled messages: {results.Length}" |> Log.debug
 
         results
         |> Result.unzip
         |> snd
-        |> Seq.iter (fun error -> $"Telegram bot {botId} " + error.Message |> Log.critical)
+        |> Seq.iter (fun error -> bot + error.Message |> Log.critical)
     }
 
-let start ct (handle: Consumer.Data -> Async<Result<int, Error'>>) (client: Client) =
-    let mutable restartAttempts = 3
+let start ct handle (client: Client) =
+    let bot = $"Telegram bot {client.BotId}"
     let limitMsg = 10
     let timeoutSec = Int32.MaxValue
 
-    $"Telegram bot {client.BotId} started." |> Log.info
+    $"{bot} started." |> Log.info
 
-    let rec innerLoop (offset: Nullable<int>) =
+    let rec innerLoop (offset: Nullable<int>) attempts =
         async {
             if ct |> canceled then
-                return Error <| Canceled $"Telegram bot {client.BotId} stopped."
+                return bot |> Canceled |> Error
             else
                 try
                     let! updates =
@@ -50,23 +50,25 @@ let start ct (handle: Consumer.Data -> Async<Result<int, Error'>>) (client: Clie
                             |> fun (ids, tasks) -> createOffset ids, tasks
 
                     if tasks.Length > 0 then
-                        tasks |> handleTasks client.BotId |> Async.Start
+                        tasks |> handleTasks bot |> Async.Start
 
-                    return! innerLoop offset
+                    return! innerLoop offset attempts
                 with ex ->
-                    let error = $"Telegram bot {client.BotId}. " + (ex |> Exception.toMessage)
+                    let error = ex |> Exception.toMessage
 
-                    if restartAttempts > 0 then
-                        restartAttempts <- restartAttempts - 1
-                        error + " Restarting..." |> Log.critical
-                        return! innerLoop offset
+                    if attempts > 0 then
+                        do! Async.Sleep(TimeSpan.FromSeconds 30)
+                        $"{bot} restarting... Reason: {error}" |> Log.critical
+                        return! innerLoop offset (attempts - 1)
                     else
                         return
                             Error
                             <| Operation
-                                { Message = error
+                                { Message = bot + error
                                   Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
 
     let defaultInt = Nullable<int>()
-    innerLoop defaultInt
+    let restartAttempts = 5
+
+    innerLoop defaultInt restartAttempts
