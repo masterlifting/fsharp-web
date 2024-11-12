@@ -18,14 +18,16 @@ let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
         results
         |> Result.unzip
         |> snd
-        |> Seq.iter (fun error -> bot + error.Message |> Log.critical)
+        |> Seq.iter (fun error -> bot + ". "+ error.Message |> Log.critical)
     }
 
 let start ct handle (client: Client) =
     let bot = $"Telegram bot {client.BotId}"
     let limitMsg = 10
-    let timeoutSec = Int32.MaxValue
-
+    let restartAttempts = 5
+    let timeoutSec = 60
+    let defaultInt = Nullable<int>()
+    
     $"{bot} started." |> Log.info
 
     let rec innerLoop (offset: Nullable<int>) attempts =
@@ -52,7 +54,7 @@ let start ct handle (client: Client) =
                     if tasks.Length > 0 then
                         tasks |> handleTasks bot |> Async.Start
 
-                    return! innerLoop offset attempts
+                    return! innerLoop offset restartAttempts
                 with ex ->
                     let error = ex |> Exception.toMessage
 
@@ -64,11 +66,8 @@ let start ct handle (client: Client) =
                         return
                             Error
                             <| Operation
-                                { Message = bot + error
+                                { Message = bot + ". " + error
                                   Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
-
-    let defaultInt = Nullable<int>()
-    let restartAttempts = 5
-
+    
     innerLoop defaultInt restartAttempts
