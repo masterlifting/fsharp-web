@@ -18,7 +18,7 @@ let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
         results
         |> Result.unzip
         |> snd
-        |> Seq.iter (fun error -> bot + ". "+ error.Message |> Log.critical)
+        |> Seq.iter (fun error -> bot + ". " + error.Message |> Log.critical)
     }
 
 let start ct handle (client: Client) =
@@ -27,7 +27,7 @@ let start ct handle (client: Client) =
     let restartAttempts = 5
     let timeoutSec = 60
     let defaultInt = Nullable<int>()
-    
+
     $"{bot} started." |> Log.info
 
     let rec innerLoop (offset: Nullable<int>) attempts =
@@ -35,6 +35,10 @@ let start ct handle (client: Client) =
             if ct |> canceled then
                 return bot |> Canceled |> Error
             else
+
+                if attempts <> restartAttempts then
+                    $"{bot} has been restarted." |> Log.info
+
                 try
                     let! updates =
                         client.GetUpdatesAsync(offset, limitMsg, timeoutSec, null, ct)
@@ -69,5 +73,5 @@ let start ct handle (client: Client) =
                                 { Message = bot + ". " + error
                                   Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
-    
+
     innerLoop defaultInt restartAttempts
