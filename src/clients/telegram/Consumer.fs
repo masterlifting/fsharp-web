@@ -11,9 +11,9 @@ let private createOffset updateIds =
 
 let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
     async {
-        $"{bot} start handling messages: {tasks.Length}" |> Log.trace
+        $"{bot} Start handling messages: {tasks.Length}" |> Log.trace
         let! results = tasks |> Async.Sequential
-        $"{bot} handled messages: {results.Length}" |> Log.debug
+        $"{bot} Handled messages: {results.Length}" |> Log.debug
 
         results
         |> Result.unzip
@@ -28,7 +28,7 @@ let start ct handle (client: Client) =
     let timeoutSec = 60
     let defaultInt = Nullable<int>()
 
-    $"{bot} started." |> Log.info
+    $"{bot} Started." |> Log.info
 
     let rec innerLoop (offset: Nullable<int>) attempts =
         async {
@@ -37,7 +37,7 @@ let start ct handle (client: Client) =
             else
 
                 if attempts <> restartAttempts then
-                    $"{bot} has been restarted." |> Log.info
+                    $"{bot} Has been restarted." |> Log.info
 
                 try
                     let! updates =
@@ -64,7 +64,7 @@ let start ct handle (client: Client) =
 
                     if attempts > 0 then
                         do! Async.Sleep(TimeSpan.FromSeconds 30)
-                        $"{bot} restarting... Reason: {error}" |> Log.critical
+                        $"{bot} Restarting... Reason: {error}" |> Log.critical
                         return! innerLoop offset (attempts - 1)
                     else
                         return
