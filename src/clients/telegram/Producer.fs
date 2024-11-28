@@ -3,6 +3,7 @@
 open System
 open Telegram.Bot
 open Infrastructure
+open Telegram.Bot.Types
 open Web.Telegram.Domain
 open System.Collections.Generic
 open Web.Telegram.Domain.Producer
@@ -37,46 +38,35 @@ module private Produce =
             fun markup ->
                 match markup with
                 | Some markup ->
-                    client.SendTextMessageAsync(
-                        dto.ChatId.Value,
-                        dto.Value,
-                        replyMarkup = markup,
-                        cancellationToken = ct
-                    )
-                | None -> client.SendTextMessageAsync(dto.ChatId.Value, dto.Value, cancellationToken = ct)
-        | Reply id ->
-            let messageId = id |> Nullable
+                    client.SendMessage(dto.ChatId.Value, dto.Value, replyMarkup = markup, cancellationToken = ct)
+                | None -> client.SendMessage(dto.ChatId.Value, dto.Value, cancellationToken = ct)
+        | Reply messageId ->
 
             fun markup ->
                 match markup with
                 | Some markup ->
-                    client.SendTextMessageAsync(
+                    client.SendMessage(
                         dto.ChatId.Value,
                         dto.Value,
-                        replyToMessageId = messageId,
+                        replyParameters = messageId,
                         replyMarkup = markup,
                         cancellationToken = ct
                     )
                 | None ->
-                    client.SendTextMessageAsync(
-                        dto.ChatId.Value,
-                        dto.Value,
-                        replyToMessageId = messageId,
-                        cancellationToken = ct
-                    )
+                    client.SendMessage(dto.ChatId.Value, dto.Value, replyParameters = messageId, cancellationToken = ct)
         | Replace messageId ->
 
             fun markup ->
                 match markup with
                 | Some markup ->
-                    client.EditMessageTextAsync(
+                    client.EditMessageText(
                         dto.ChatId.Value,
                         messageId,
                         dto.Value,
                         replyMarkup = markup,
                         cancellationToken = ct
                     )
-                | None -> client.EditMessageTextAsync(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
+                | None -> client.EditMessageText(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
 
     let text ct (dto: Dto<string>) (client: Client) =
         async {

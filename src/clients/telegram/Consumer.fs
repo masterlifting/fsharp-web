@@ -40,9 +40,7 @@ let start ct handle (client: Client) =
                     $"{bot} Has been restarted." |> Log.info
 
                 try
-                    let! updates =
-                        client.GetUpdatesAsync(offset, limitMsg, timeoutSec, null, ct)
-                        |> Async.AwaitTask
+                    let! updates = client.GetUpdates(offset, limitMsg, timeoutSec, null, ct) |> Async.AwaitTask
 
                     let offset, tasks =
                         match updates |> Array.isEmpty with
@@ -63,7 +61,7 @@ let start ct handle (client: Client) =
                     let error = ex |> Exception.toMessage
 
                     if attempts > 0 then
-                        do! Async.Sleep(TimeSpan.FromSeconds 30)
+                        do! Async.Sleep 30000
                         $"{bot} Restarting... Reason: {error}" |> Log.critical
                         return! innerLoop offset (attempts - 1)
                     else
