@@ -3,7 +3,6 @@
 open System
 open Telegram.Bot
 open Infrastructure
-open Telegram.Bot.Types
 open Web.Telegram.Domain
 open System.Collections.Generic
 open Web.Telegram.Domain.Producer
@@ -119,25 +118,25 @@ module private Produce =
                           Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
         }
 
-let produce client ct =
+let produce ct client =
     fun data ->
         match data with
         | Text dto -> client |> Produce.text ct dto
         | Buttons dto -> client |> Produce.buttons ct dto
         | _ -> $"{data}" |> NotSupported |> Error |> async.Return
 
-let produceOk client ct =
-    fun (dataRes: Async<Result<Data, Error'>>) -> dataRes |> ResultAsync.bindAsync (produce client ct)
+let produceOk ct client =
+    fun (dataRes: Async<Result<Data, Error'>>) -> dataRes |> ResultAsync.bindAsync (produce ct client)
 
-let produceResult chatId client ct =
+let produceResult chatId ct client =
     fun (dataRes: Async<Result<Data, Error'>>) ->
         async {
             match! dataRes with
-            | Ok data -> return! data |> produce client ct
+            | Ok data -> return! data |> produce ct client
             | Error error ->
                 let data = Text.createError error chatId
 
-                match! data |> produce client ct with
+                match! data |> produce ct client with
                 | Ok _ -> return Error error
                 | Error error -> return Error error
         }
