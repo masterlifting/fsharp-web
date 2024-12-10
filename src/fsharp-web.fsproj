@@ -13,11 +13,16 @@
     <Compile Include="clients\telegram\Telegram.Client.fs" />
     <Compile Include="clients\telegram\Telegram.Consumer.fs" />
     <Compile Include="clients\telegram\Telegram.Producer.fs" />
-    <Compile Include="clients\http\Domain.fs" />
-    <Compile Include="clients\http\Client.fs" />
     <Compile Include="clients\http\domain\Domain.Client.fs" />
+    <Compile Include="clients\http\domain\Domain.Headers.fs" />
     <Compile Include="clients\http\domain\Domain.Request.fs" />
     <Compile Include="clients\http\domain\Domain.Response.fs" />
+    <Compile Include="clients\http\Http.Route.fs" />
+    <Compile Include="clients\http\Http.Headers.fs" />
+    <Compile Include="clients\http\Http.Client.fs" />
+    <Compile Include="clients\http\Http.Request.fs" />
+    <Compile Include="clients\http\Http.Response.fs" />
+    <Compile Include="clients\http\Http.Consumer.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Captcha.fs" />
   </ItemGroup>
