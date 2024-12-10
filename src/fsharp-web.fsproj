@@ -15,7 +15,9 @@
     <Compile Include="clients\telegram\Telegram.Producer.fs" />
     <Compile Include="clients\http\Domain.fs" />
     <Compile Include="clients\http\Client.fs" />
-    <Compile Include="Domain.fs" />
+    <Compile Include="clients\http\domain\Domain.Client.fs" />
+    <Compile Include="clients\http\domain\Domain.Request.fs" />
+    <Compile Include="clients\http\domain\Domain.Response.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Captcha.fs" />
   </ItemGroup>

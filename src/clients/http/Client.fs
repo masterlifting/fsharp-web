@@ -119,7 +119,7 @@ let private create' (baseUrl: Uri) =
             { Message = ex |> Exception.toMessage
               Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
 
-let create (baseUrl: string) (headers: Headers) =
+let init (baseUrl: string) (headers: Headers) =
     baseUrl
     |> Route.toUri
     |> Result.bind (fun uri ->

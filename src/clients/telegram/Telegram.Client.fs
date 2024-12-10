@@ -13,7 +13,7 @@ let private initByToken token =
     | true, client -> Ok client
     | _ ->
         try
-            let client = Client(token)
+            let client = Bot(token)
             clients.TryAdd(token, client) |> ignore
             Ok client
         with ex ->
@@ -32,5 +32,5 @@ let private initByTokenEnv key =
 
 let init token =
     match token with
-    | Value token -> initByToken token
-    | EnvKey key -> initByTokenEnv key
+    | Token.Value token -> initByToken token
+    | Token.EnvKey key -> initByTokenEnv key

@@ -1,5 +1,7 @@
 ﻿module Web.Telegram.Domain.Consumer
 
+open Infrastructure.Domain
+
 type Dto<'a> = { Id: int; ChatId: ChatId; Value: 'a }
 
 type Photo =
@@ -39,3 +41,5 @@ type Data =
     | MyChatMember of Dto<string>
     | ChatMember of Dto<string>
     | Unknown of Dto<string>
+
+type Handler = Bot * (Data -> Async<Result<int, Error'>>)
