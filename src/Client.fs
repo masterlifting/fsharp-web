@@ -1,12 +1,12 @@
 ﻿[<RequireQualifiedAccess>]
 module Web.Client
 
-open Infrastructure
+open Infrastructure.Prelude
 open Web.Domain
 
-let create context =
+let init context =
     match context with
-    | Context.Telegram way -> Telegram.Client.create way |> Result.map Client.Telegram
+    | Context.Telegram option -> Telegram.Client.init option |> Result.map Client.Telegram
     | Context.Http(url, headers) -> Http.Client.create url headers |> Result.map Client.Http
 
 let consume ct =

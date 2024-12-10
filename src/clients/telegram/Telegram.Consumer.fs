@@ -2,9 +2,11 @@
 
 open System
 open Telegram.Bot
-open Infrastructure
+open Infrastructure.Domain
+open Infrastructure.Prelude
 open Infrastructure.Logging
 open Web.Telegram.Domain
+open Web.Telegram.DataAccess.Update
 
 let private createOffset updateIds =
     updateIds |> Array.max |> (fun id -> id + 1 |> Nullable)
@@ -21,7 +23,7 @@ let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
         |> Seq.iter (fun error -> bot + ". " + error.Message |> Log.critical)
     }
 
-let start ct handle (client: Client) =
+let start ct handle (client: Bot) =
     let bot = $"Telegram bot {client.BotId}"
     let limitMsg = 10
     let restartAttempts = 5
@@ -48,7 +50,7 @@ let start ct handle (client: Client) =
                         | false ->
                             updates
                             |> Array.map (fun update ->
-                                let task = update |> Mapper.Consumer.toData |> ResultAsync.wrap handle
+                                let task = update.ToDomain() |> ResultAsync.wrap handle
                                 update.Id, task)
                             |> Array.unzip
                             |> fun (ids, tasks) -> createOffset ids, tasks
@@ -69,7 +71,7 @@ let start ct handle (client: Client) =
                             Error
                             <| Operation
                                 { Message = bot + ". " + error
-                                  Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+                                  Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
         }
 
     innerLoop defaultInt restartAttempts

@@ -2,7 +2,8 @@
 
 open System
 open Telegram.Bot
-open Infrastructure
+open Infrastructure.Domain
+open Infrastructure.Prelude
 open Web.Telegram.Domain
 open System.Collections.Generic
 open Web.Telegram.Domain.Producer
@@ -31,7 +32,7 @@ module Buttons =
         |> Buttons
 
 module private Produce =
-    let send ct (dto: Dto<string>) (client: Client) =
+    let private send ct (dto: Dto<string>) (client: Bot) =
         match dto.Id with
         | New ->
             fun markup ->
@@ -67,7 +68,7 @@ module private Produce =
                     )
                 | None -> client.EditMessageText(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
 
-    let text ct (dto: Dto<string>) (client: Client) =
+    let text ct (dto: Dto<string>) (client: Bot) =
         async {
             try
                 let sendMessage = client |> send ct dto
@@ -80,10 +81,10 @@ module private Produce =
                     Error
                     <| Operation
                         { Message = ex |> Exception.toMessage
-                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
         }
 
-    let buttons ct (dto: Dto<Buttons>) (client: Client) =
+    let buttons ct (dto: Dto<Buttons>) (client: Bot) =
 
         let inline toColumnedMarkup columns toResult data =
             data
@@ -115,7 +116,7 @@ module private Produce =
                     Error
                     <| Operation
                         { Message = ex |> Exception.toMessage
-                          Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
         }
 
 let produce ct client =

@@ -2,11 +2,13 @@ module Web.Telegram.Client
 
 open System
 open Infrastructure
+open Infrastructure.Prelude
+open Infrastructure.Domain
 open Web.Telegram.Domain
 
 let private clients = ClientFactory()
 
-let private createByToken token =
+let private initByToken token =
     match clients.TryGetValue token with
     | true, client -> Ok client
     | _ ->
@@ -18,17 +20,17 @@ let private createByToken token =
             Error
             <| Operation
                 { Message = ex |> Exception.toMessage
-                  Code = ErrorReason.buildLineOpt (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) }
+                  Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
 
-let private createByTokenEnv key =
+let private initByTokenEnv key =
     Configuration.getEnvVar key
     |> Result.bind (
         Option.map Ok
         >> Option.defaultValue (Error <| NotFound $"Environment variable '{key}'.")
     )
-    |> Result.bind createByToken
+    |> Result.bind initByToken
 
-let create token =
+let init token =
     match token with
-    | Value token -> createByToken token
-    | EnvKey key -> createByTokenEnv key
+    | Value token -> initByToken token
+    | EnvKey key -> initByTokenEnv key
