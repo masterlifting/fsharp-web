@@ -4,7 +4,7 @@ module Web.Client
 open Infrastructure.Prelude
 
 type Client =
-    | Http of Http.Domain.Client.Client
+    | Http of Http.Domain.Client.HttpClient
     | Telegram of Telegram.Domain.Client.Bot
 
 type Connection =
@@ -17,7 +17,7 @@ let init connection =
     | Connection.Http value -> value |> Http.Client.init |> Result.map Client.Http
 
 type Consumer =
-    | Http of Http.Domain.Client.Client
+    | Http of Http.Domain.Client.HttpClient
     | Telegram of Telegram.Domain.Consumer.Handler
 
 let consume ct =

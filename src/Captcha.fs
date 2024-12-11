@@ -6,7 +6,6 @@ open Infrastructure
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Http.Domain
-open Web.Http.Domain.Request
 
 [<Literal>]
 let ErrorCode = "CaptchaErrorCode"
@@ -95,7 +94,7 @@ let private getTaskResult ct key httpClient task =
                 innerLoop 0
             else
                 httpClient
-                |> Http.Request.post ct request content
+                |> Http.Request.post request content ct
                 |> Http.Response.String.readContent ct
                 |> Http.Response.String.fromJson<TaskResult>
                 |> ResultAsync.bindAsync (handleTaskResult innerLoop (attempts - 1))
@@ -106,7 +105,7 @@ let private createTask key image ct httpClient =
     let request, content = createCreateTaskRequest key image
 
     httpClient
-    |> Http.Request.post ct request content
+    |> Http.Request.post request content ct
     |> Http.Response.String.readContent ct
     |> Http.Response.String.fromJson<Task>
     |> ResultAsync.bindAsync (getTaskResult ct key httpClient)

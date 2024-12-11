@@ -8,9 +8,8 @@ open System.Net.Http.Headers
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Http.Domain
-open Web.Http.Domain.Request
 
-let get (ct: CancellationToken) (request: Request) (client: Client) =
+let get (request: Request) (ct: CancellationToken) (client: HttpClient) =
     async {
         try
             match client |> Headers.set request.Headers with
@@ -34,7 +33,7 @@ let get (ct: CancellationToken) (request: Request) (client: Client) =
                       Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
     }
 
-let post (ct: CancellationToken) (request: Request) (content: RequestContent) (client: Client) =
+let post (request: Request) (content: RequestContent) (ct: CancellationToken) (client: HttpClient) =
     async {
         try
             match client |> Headers.set request.Headers with

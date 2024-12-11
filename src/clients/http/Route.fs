@@ -23,9 +23,9 @@ let fromQueryParams (queryParams: string) =
 let toQueryParams (uri: Uri) =
     uri.Query.TrimStart '?' |> fromQueryParams
 
-let toHost (client: Client) = client.BaseAddress.Host
+let toHost (client: HttpClient) = client.BaseAddress.Host
 
-let toAbsoluteUri (client: Client) = client.BaseAddress.AbsoluteUri
+let toAbsoluteUri (client: HttpClient) = client.BaseAddress.AbsoluteUri
 
-let toOrigin (client: Client) =
+let toOrigin (client: HttpClient) =
     client.BaseAddress.GetLeftPart(UriPartial.Authority)

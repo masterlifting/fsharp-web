@@ -9,7 +9,7 @@ let private clients = ClientFactory()
 
 let private create (baseUrl: Uri) =
     try
-        let client = new Client()
+        let client = new HttpClient()
         client.BaseAddress <- baseUrl
         Ok client
     with ex ->
