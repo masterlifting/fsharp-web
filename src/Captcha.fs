@@ -1,11 +1,15 @@
+[<RequireQualifiedAccess>]
 module Web.Captcha
 
 open System
 open Infrastructure
+open Infrastructure.Domain
+open Infrastructure.Prelude
 open Web.Http.Domain
+open Web.Http.Domain.Request
 
 [<Literal>]
-let CaptchaErrorCode = "CaptchaErrorCode"
+let ErrorCode = "CaptchaErrorCode"
 
 [<Struct>]
 type Task = { TaskId: uint64 }
@@ -73,7 +77,7 @@ let private handleTaskResult tryAgain attempts result =
                     Error
                     <| Operation
                         { Message = $"Captcha. The '{result.Solution.Text}' is not an integer."
-                          Code = Some CaptchaErrorCode }
+                          Code = ErrorCode |> Custom |> Some }
         | _ ->
             do! Async.Sleep 500
             return! tryAgain attempts
@@ -91,35 +95,32 @@ let private getTaskResult ct key httpClient task =
                 innerLoop 0
             else
                 httpClient
-                |> Http.Client.Request.post ct request content
-                |> Http.Client.Response.String.readContent ct
-                |> Http.Client.Response.String.fromJson<TaskResult>
+                |> Http.Request.post ct request content
+                |> Http.Response.String.readContent ct
+                |> Http.Response.String.fromJson<TaskResult>
                 |> ResultAsync.bindAsync (handleTaskResult innerLoop (attempts - 1))
 
     innerLoop 5
 
-let private createTask ct key httpClient image =
+let private createTask key image ct httpClient =
     let request, content = createCreateTaskRequest key image
 
     httpClient
-    |> Http.Client.Request.post ct request content
-    |> Http.Client.Response.String.readContent ct
-    |> Http.Client.Response.String.fromJson<Task>
+    |> Http.Request.post ct request content
+    |> Http.Response.String.readContent ct
+    |> Http.Response.String.fromJson<Task>
     |> ResultAsync.bindAsync (getTaskResult ct key httpClient)
 
 let solveToInt ct (image: byte array) =
     match image.Length with
-    | 0 -> async { return Error <| NotFound "Captcha. Image to solve." }
+    | 0 -> "Captcha. Image to solve." |> NotFound |> Error |> async.Return
     | _ ->
         Configuration.getEnvVar "ANTI_CAPTCHA_API_KEY"
         |> ResultAsync.wrap (fun keyOpt ->
             match keyOpt with
-            | None -> async { return Error <| NotFound "ANTI_CAPTCHA_API_KEY" }
+            | None -> "ANTI_CAPTCHA_API_KEY" |> NotFound |> Error |> async.Return
             | Some key ->
-
-                let createHttpClient url = Http.Client.create url None
-
-                let createCaptchaTask =
-                    ResultAsync.wrap (fun httpClient -> image |> createTask ct key httpClient)
-
-                createHttpClient "https://api.anti-captcha.com" |> createCaptchaTask)
+                { BaseUrl = "https://api.anti-captcha.com"
+                  Headers = None }
+                |> Http.Client.init
+                |> ResultAsync.wrap (createTask key image ct))

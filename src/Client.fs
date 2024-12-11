@@ -8,17 +8,17 @@ type Client =
     | Telegram of Telegram.Domain.Client.Bot
 
 type Connection =
-    | Http of string * Http.Domain.Headers.Headers
+    | Http of Http.Domain.Client.Connection
     | Telegram of Web.Telegram.Domain.Client.Token
+
+let init connection =
+    match connection with
+    | Connection.Telegram value -> value |> Telegram.Client.init |> Result.map Client.Telegram
+    | Connection.Http value -> value |> Http.Client.init |> Result.map Client.Http
 
 type Consumer =
     | Http of Http.Domain.Client.Client
     | Telegram of Telegram.Domain.Consumer.Handler
-
-let init connection =
-    match connection with
-    | Connection.Telegram option -> Telegram.Client.init option |> Result.map Client.Telegram
-    | Connection.Http(url, headers) -> Http.Client.init url headers |> Result.map Client.Http
 
 let consume ct =
     ResultAsync.wrap (function

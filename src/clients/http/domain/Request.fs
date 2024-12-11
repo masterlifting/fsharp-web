@@ -1,4 +1,5 @@
-﻿module Web.Http.Domain.Request
+﻿[<AutoOpen>]
+module Web.Http.Domain.Request
 
 open System
 type Request = { Path: string; Headers: Headers }

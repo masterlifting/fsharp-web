@@ -1,4 +1,5 @@
-﻿module Web.Http.Domain.Response
+﻿[<AutoOpen>]
+module Web.Http.Domain.Response
 
 type Response<'a> =
     { Content: 'a
