@@ -11,11 +11,12 @@ open Telegram.Bot.Types.ReplyMarkups
 
 module Text =
 
-    let create (chatId, msgId) (value: string) =
-        { Id = msgId
-          ChatId = chatId
-          Value = value }
-        |> Text
+    let create (value: string) =
+        fun (chatId, msgId) ->
+            { Id = msgId
+              ChatId = chatId
+              Value = value }
+            |> Text
 
     let createError (error: Error') =
         fun chatId ->
@@ -25,119 +26,128 @@ module Text =
             |> Text
 
 module Buttons =
-    let create (chatId, msgId) (value: Buttons) =
-        { Id = msgId
-          ChatId = chatId
-          Value = value }
-        |> Buttons
+    let create (value: Buttons) =
+        fun (chatId, msgId) ->
+            { Id = msgId
+              ChatId = chatId
+              Value = value }
+            |> Buttons
 
 module private Produce =
-    let private send ct (dto: Dto<string>) (client: Bot) =
-        match dto.Id with
-        | New ->
-            fun markup ->
-                match markup with
-                | Some markup ->
-                    client.SendMessage(dto.ChatId.Value, dto.Value, replyMarkup = markup, cancellationToken = ct)
-                | None -> client.SendMessage(dto.ChatId.Value, dto.Value, cancellationToken = ct)
-        | Reply messageId ->
+    let private send (dto: Dto<string>) ct =
+        fun (client: Bot) ->
+            match dto.Id with
+            | New ->
+                fun markup ->
+                    match markup with
+                    | Some markup ->
+                        client.SendMessage(dto.ChatId.Value, dto.Value, replyMarkup = markup, cancellationToken = ct)
+                    | None -> client.SendMessage(dto.ChatId.Value, dto.Value, cancellationToken = ct)
+            | Reply messageId ->
 
-            fun markup ->
-                match markup with
-                | Some markup ->
-                    client.SendMessage(
-                        dto.ChatId.Value,
-                        dto.Value,
-                        replyParameters = messageId,
-                        replyMarkup = markup,
-                        cancellationToken = ct
-                    )
-                | None ->
-                    client.SendMessage(dto.ChatId.Value, dto.Value, replyParameters = messageId, cancellationToken = ct)
-        | Replace messageId ->
+                fun markup ->
+                    match markup with
+                    | Some markup ->
+                        client.SendMessage(
+                            dto.ChatId.Value,
+                            dto.Value,
+                            replyParameters = messageId,
+                            replyMarkup = markup,
+                            cancellationToken = ct
+                        )
+                    | None ->
+                        client.SendMessage(
+                            dto.ChatId.Value,
+                            dto.Value,
+                            replyParameters = messageId,
+                            cancellationToken = ct
+                        )
+            | Replace messageId ->
 
-            fun markup ->
-                match markup with
-                | Some markup ->
-                    client.EditMessageText(
-                        dto.ChatId.Value,
-                        messageId,
-                        dto.Value,
-                        replyMarkup = markup,
-                        cancellationToken = ct
-                    )
-                | None -> client.EditMessageText(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
+                fun markup ->
+                    match markup with
+                    | Some markup ->
+                        client.EditMessageText(
+                            dto.ChatId.Value,
+                            messageId,
+                            dto.Value,
+                            replyMarkup = markup,
+                            cancellationToken = ct
+                        )
+                    | None -> client.EditMessageText(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
 
-    let text ct (dto: Dto<string>) (client: Bot) =
-        async {
-            try
-                let sendMessage = client |> send ct dto
+    let text (dto: Dto<string>) ct =
+        fun (client: Bot) ->
+            async {
+                try
+                    let sendMessage = client |> send dto ct
 
-                let! result = sendMessage None |> Async.AwaitTask
+                    let! result = sendMessage None |> Async.AwaitTask
 
-                return Ok result.MessageId
-            with ex ->
-                return
-                    Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
-        }
+                    return Ok result.MessageId
+                with ex ->
+                    return
+                        Error
+                        <| Operation
+                            { Message = ex |> Exception.toMessage
+                              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+            }
 
-    let buttons ct (dto: Dto<Buttons>) (client: Bot) =
+    let buttons (dto: Dto<Buttons>) ct =
+        fun (client: Bot) ->
 
-        let inline toColumnedMarkup columns toResult data =
-            data
-            |> Seq.chunkBySize columns
-            |> Seq.map (Seq.map toResult)
-            |> InlineKeyboardMarkup
+            let inline toColumnedMarkup columns toResult data =
+                data
+                |> Seq.chunkBySize columns
+                |> Seq.map (Seq.map toResult)
+                |> InlineKeyboardMarkup
 
-        async {
-            try
-                let toCallbackData (item: KeyValuePair<string, string>) =
-                    InlineKeyboardButton.WithCallbackData(item.Value, item.Key)
+            async {
+                try
+                    let toCallbackData (item: KeyValuePair<string, string>) =
+                        InlineKeyboardButton.WithCallbackData(item.Value, item.Key)
 
-                let markup =
-                    dto.Value.Data |> toColumnedMarkup dto.Value.Columns toCallbackData |> Some
+                    let markup =
+                        dto.Value.Data |> toColumnedMarkup dto.Value.Columns toCallbackData |> Some
 
-                let dto =
-                    { Id = dto.Id
-                      ChatId = dto.ChatId
-                      Value = dto.Value.Name }
+                    let dto =
+                        { Id = dto.Id
+                          ChatId = dto.ChatId
+                          Value = dto.Value.Name }
 
-                let sendMessage = client |> send ct dto
+                    let sendMessage = client |> send dto ct
 
-                let! result = sendMessage markup |> Async.AwaitTask
+                    let! result = sendMessage markup |> Async.AwaitTask
 
-                return Ok result.MessageId
+                    return Ok result.MessageId
 
-            with ex ->
-                return
-                    Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
-        }
+                with ex ->
+                    return
+                        Error
+                        <| Operation
+                            { Message = ex |> Exception.toMessage
+                              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+            }
 
-let produce ct client =
-    fun data ->
+let produce data ct =
+    fun client ->
         match data with
-        | Text dto -> client |> Produce.text ct dto
-        | Buttons dto -> client |> Produce.buttons ct dto
+        | Text dto -> client |> Produce.text dto ct
+        | Buttons dto -> client |> Produce.buttons dto ct
         | _ -> $"{data}" |> NotSupported |> Error |> async.Return
 
-let produceOk ct client =
-    fun (dataRes: Async<Result<Data, Error'>>) -> dataRes |> ResultAsync.bindAsync (produce ct client)
+let produceOk dataRes ct =
+    fun client -> dataRes |> ResultAsync.bindAsync (fun data -> client |> produce data ct)
 
-let produceResult chatId ct client =
-    fun (dataRes: Async<Result<Data, Error'>>) ->
+let produceResult dataRes chatId ct =
+    fun client ->
         async {
             match! dataRes with
-            | Ok data -> return! data |> produce ct client
+            | Ok data -> return! client |> produce data ct
             | Error error ->
                 let data = Text.createError error chatId
 
-                match! data |> produce ct client with
+                match! client |> produce data ct with
                 | Ok _ -> return Error error
                 | Error error -> return Error error
         }

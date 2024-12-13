@@ -23,55 +23,57 @@ let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
         |> Seq.iter (fun error -> bot + ". " + error.Message |> Log.critical)
     }
 
-let start ct handle (client: Bot) =
-    let bot = $"Telegram bot {client.BotId}"
-    let limitMsg = 10
-    let restartAttempts = 5
-    let timeoutSec = 60
-    let defaultInt = Nullable<int>()
+let start handle ct =
+    fun (client: Bot) ->
+        let bot = $"Telegram bot {client.BotId}"
+        let limitMsg = 10
+        let restartAttempts = 50
+        let timeoutSec = 60
+        let defaultInt = Nullable<int>()
 
-    $"{bot} Started." |> Log.info
+        $"{bot} Started." |> Log.info
 
-    let rec innerLoop (offset: Nullable<int>) attempts =
-        async {
-            if ct |> canceled then
-                return bot |> Canceled |> Error
-            else
+        let rec innerLoop (offset: Nullable<int>) attempts =
+            async {
+                if ct |> canceled then
+                    return bot |> Canceled |> Error
+                else
 
-                if attempts <> restartAttempts then
-                    $"{bot} Has been restarted." |> Log.info
+                    if attempts <> restartAttempts then
+                        $"{bot} Has been restarted." |> Log.info
 
-                try
-                    let! updates = client.GetUpdates(offset, limitMsg, timeoutSec, null, ct) |> Async.AwaitTask
+                    try
+                        let! updates = client.GetUpdates(offset, limitMsg, timeoutSec, null, ct) |> Async.AwaitTask
 
-                    let offset, tasks =
-                        match updates |> Array.isEmpty with
-                        | true -> offset, Array.empty
-                        | false ->
-                            updates
-                            |> Array.map (fun update ->
-                                let task = update.ToDomain() |> ResultAsync.wrap handle
-                                update.Id, task)
-                            |> Array.unzip
-                            |> fun (ids, tasks) -> createOffset ids, tasks
+                        let offset, tasks =
+                            match updates |> Array.isEmpty with
+                            | true -> offset, Array.empty
+                            | false ->
+                                updates
+                                |> Array.map (fun update ->
+                                    let task = update.ToDomain() |> ResultAsync.wrap handle
+                                    update.Id, task)
+                                |> Array.unzip
+                                |> fun (ids, tasks) -> createOffset ids, tasks
 
-                    if tasks.Length > 0 then
-                        tasks |> handleTasks bot |> Async.Start
+                        if tasks.Length > 0 then
+                            tasks |> handleTasks bot |> Async.Start
 
-                    return! innerLoop offset restartAttempts
-                with ex ->
-                    let error = ex |> Exception.toMessage
+                        return! innerLoop offset restartAttempts
+                    with ex ->
+                        let error = ex |> Exception.toMessage
 
-                    if attempts > 0 then
-                        do! Async.Sleep 30000
-                        $"{bot} Restarting... Reason: {error}" |> Log.critical
-                        return! innerLoop offset (attempts - 1)
-                    else
-                        return
-                            Error
-                            <| Operation
-                                { Message = bot + ". " + error
-                                  Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
-        }
+                        if attempts > 0 then
+                            let interval = 10000.0 * Math.Pow(1.2, float (restartAttempts - attempts)) |> int
+                            do! Async.Sleep interval
+                            $"{bot} Restarting... Reason: {error}" |> Log.critical
+                            return! innerLoop offset (attempts - 1)
+                        else
+                            return
+                                Error
+                                <| Operation
+                                    { Message = bot + ". " + error
+                                      Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+            }
 
-    innerLoop defaultInt restartAttempts
+        innerLoop defaultInt restartAttempts

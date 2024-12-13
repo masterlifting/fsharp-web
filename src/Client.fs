@@ -22,5 +22,5 @@ type Consumer =
 
 let consume ct =
     ResultAsync.wrap (function
-        | Consumer.Telegram(client, handle) -> client |> Telegram.Consumer.start ct handle
+        | Consumer.Telegram(client, handle) -> client |> Telegram.Consumer.start handle ct
         | Consumer.Http client -> client |> Http.Consumer.start ct)
