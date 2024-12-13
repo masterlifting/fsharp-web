@@ -5,7 +5,7 @@ open Infrastructure.Prelude
 
 type Client =
     | Http of Http.Domain.Client.HttpClient
-    | Telegram of Telegram.Domain.Client.Bot
+    | Telegram of Telegram.Domain.Client.TelegramBot
 
 type Connection =
     | Http of Http.Domain.Client.Connection

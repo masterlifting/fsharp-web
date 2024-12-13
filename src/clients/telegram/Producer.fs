@@ -35,7 +35,7 @@ module Buttons =
 
 module private Produce =
     let private send (dto: Dto<string>) ct =
-        fun (client: Bot) ->
+        fun (client: TelegramBot) ->
             match dto.Id with
             | New ->
                 fun markup ->
@@ -77,7 +77,7 @@ module private Produce =
                     | None -> client.EditMessageText(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
 
     let text (dto: Dto<string>) ct =
-        fun (client: Bot) ->
+        fun (client: TelegramBot) ->
             async {
                 try
                     let sendMessage = client |> send dto ct
@@ -94,7 +94,7 @@ module private Produce =
             }
 
     let buttons (dto: Dto<Buttons>) ct =
-        fun (client: Bot) ->
+        fun (client: TelegramBot) ->
 
             let inline toColumnedMarkup columns toResult data =
                 data

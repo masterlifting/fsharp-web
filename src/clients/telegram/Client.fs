@@ -13,7 +13,7 @@ let private initByToken token =
     | true, client -> Ok client
     | _ ->
         try
-            let client = Bot(token)
+            let client = TelegramBot(token)
             clients.TryAdd(token, client) |> ignore
             Ok client
         with ex ->

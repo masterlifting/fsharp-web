@@ -24,7 +24,7 @@ let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
     }
 
 let start handle ct =
-    fun (client: Bot) ->
+    fun (client: TelegramBot) ->
         let bot = $"Telegram bot {client.BotId}"
         let limitMsg = 10
         let restartAttempts = 50

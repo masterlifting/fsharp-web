@@ -4,8 +4,8 @@ module Web.Telegram.Domain.Client
 open System.Collections.Concurrent
 open Telegram.Bot
 
-type Bot = TelegramBotClient
-type ClientFactory = ConcurrentDictionary<string, Bot>
+type TelegramBot = TelegramBotClient
+type ClientFactory = ConcurrentDictionary<string, TelegramBot>
 
 type Token =
     | Value of string
@@ -17,5 +17,3 @@ type ChatId =
     member this.Value =
         match this with
         | ChatId value -> value
-        
-
