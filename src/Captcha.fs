@@ -14,8 +14,11 @@ let ErrorCode = "CaptchaErrorCode"
 type Task = { TaskId: uint64 }
 
 type Solution = { Text: string }
-type TaskResult = { Status: string; Solution: Solution }
 
+type TaskResult =
+    { Status: string
+      Solution: Solution
+      ErrorDescription: string option }
 
 let private createGetTaskResultRequest key task =
     let data =
@@ -67,8 +70,14 @@ let private createCreateTaskRequest key image =
 
 let private handleTaskResult tryAgain attempts result =
     async {
-        match result.Status with
-        | "ready" ->
+        match result.ErrorDescription, result.Status with
+        | Some error, _ ->
+            return
+                Error
+                <| Operation
+                    { Message = $"Captcha. {error}"
+                      Code = ErrorCode |> Custom |> Some }
+        | None, "ready" ->
             return
                 match result.Solution.Text with
                 | AP.IsInt result -> Ok result
