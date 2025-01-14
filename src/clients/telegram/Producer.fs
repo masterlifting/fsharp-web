@@ -136,6 +136,13 @@ let produce data ct =
         | Buttons dto -> client |> Produce.buttons dto ct
         | _ -> $"{data}" |> NotSupported |> Error |> async.Return
 
+let produceSeq data ct =
+    fun client ->
+        data
+        |> Seq.map (fun message -> client |> produce message ct)
+        |> Async.Parallel
+        |> Async.map Result.choose
+
 let produceOk dataRes ct =
     fun client -> dataRes |> ResultAsync.bindAsync (fun data -> client |> produce data ct)
 
