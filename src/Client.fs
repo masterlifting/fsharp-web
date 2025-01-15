@@ -1,8 +1,6 @@
 ﻿[<RequireQualifiedAccess>]
 module Web.Client
 
-open Infrastructure.Prelude
-
 type Client =
     | Http of Http.Domain.Client.HttpClient
     | Telegram of Telegram.Domain.Client.TelegramBot
@@ -20,7 +18,7 @@ type Consumer =
     | Http of Http.Domain.Client.HttpClient
     | Telegram of Telegram.Domain.Consumer.Handler
 
-let consume ct =
-    ResultAsync.wrap (function
-        | Consumer.Telegram(client, handle) -> client |> Telegram.Consumer.start handle ct
-        | Consumer.Http client -> client |> Http.Consumer.start ct)
+let consume consumer ct =
+    match consumer with
+    | Consumer.Telegram(client, handler) -> client |> Telegram.Consumer.start handler ct
+    | Consumer.Http client -> client |> Http.Consumer.start ct
