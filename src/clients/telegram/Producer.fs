@@ -158,3 +158,16 @@ let produceResult dataRes chatId ct =
                 | Ok _ -> return Error error
                 | Error error -> return Error error
         }
+
+let produceResults dataRes chatId ct =
+    fun client ->
+        async {
+            match! dataRes with
+            | Ok data -> return! client |> produceSeq data ct
+            | Error error ->
+                let data = Text.createError error chatId
+
+                match! client |> produce data ct with
+                | Ok _ -> return Error error
+                | Error error -> return Error error
+        }

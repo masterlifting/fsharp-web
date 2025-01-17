@@ -42,4 +42,4 @@ type Data =
     | ChatMember of Dto<string>
     | Unknown of Dto<string>
 
-type Handler = TelegramBot * (Data -> Async<Result<int, Error'>>)
+type Handler = TelegramBot * (Data -> Async<Result<unit, Error'>>)

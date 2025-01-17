@@ -11,7 +11,7 @@ open Web.Telegram.DataAccess.Update
 let private createOffset updateIds =
     updateIds |> Array.max |> (fun id -> id + 1 |> Nullable)
 
-let private handleTasks bot (tasks: Async<Result<int, Error'>> array) =
+let private handleTasks bot (tasks: Async<Result<unit, Error'>> array) =
     async {
         $"{bot} Start handling messages: {tasks.Length}" |> Log.trace
         let! results = tasks |> Async.Sequential
