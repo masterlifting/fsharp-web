@@ -15,7 +15,7 @@ let private handleTasks bot (tasks: Async<Result<unit, Error'>> array) =
     async {
         $"{bot} Start handling messages: {tasks.Length}" |> Log.trace
         let! results = tasks |> Async.Sequential
-        $"{bot} Handled messages: {results.Length}" |> Log.debug
+        $"{bot} Handled messages: {results.Length}" |> Log.trace
 
         results
         |> Result.unzip
