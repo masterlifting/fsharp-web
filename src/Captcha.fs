@@ -8,7 +8,7 @@ open Infrastructure.Prelude
 open Web.Http.Domain
 
 [<Literal>]
-let ErrorCode = "CaptchaErrorCode"
+let ERROR_CODE = "CaptchaErrorCode"
 
 [<Struct>]
 type Task = { TaskId: uint64 }
@@ -76,7 +76,7 @@ let private handleTaskResult tryAgain attempts result =
                 Error
                 <| Operation
                     { Message = $"Captcha. {error}"
-                      Code = ErrorCode |> Custom |> Some }
+                      Code = ERROR_CODE |> Custom |> Some }
         | None, "ready" ->
             return
                 match result.Solution.Text with
@@ -85,7 +85,7 @@ let private handleTaskResult tryAgain attempts result =
                     Error
                     <| Operation
                         { Message = $"Captcha. The '{result.Solution.Text}' is not an integer."
-                          Code = ErrorCode |> Custom |> Some }
+                          Code = ERROR_CODE |> Custom |> Some }
         | _ ->
             do! Async.Sleep 500
             return! tryAgain attempts
@@ -97,7 +97,12 @@ let private getTaskResult ct key httpClient task =
 
     let rec innerLoop attempts =
         match attempts with
-        | 0 -> async { return Error <| Canceled "Captcha. No attempts left." }
+        | 0 ->
+            Error
+            <| Operation
+                { Message = "Captcha. No attempts left."
+                  Code = ERROR_CODE |> Custom |> Some }
+            |> async.Return
         | _ ->
             if ct |> canceled then
                 innerLoop 0
