@@ -136,13 +136,6 @@ let produce data ct =
         | Buttons dto -> client |> Produce.buttons dto ct
         | _ -> $"{data}" |> NotSupported |> Error |> async.Return
 
-let produceSeq data ct =
-    fun client ->
-        data
-        |> Seq.map (fun message -> client |> produce message ct)
-        |> Async.Parallel
-        |> Async.map Result.choose
-
 let produceOk dataRes ct =
     fun client -> dataRes |> ResultAsync.bindAsync (fun data -> client |> produce data ct)
 
@@ -159,7 +152,17 @@ let produceResult dataRes chatId ct =
                 | Error error -> return Error error
         }
 
-let produceResults dataRes chatId ct =
+let produceSeq data ct =
+    fun client ->
+        data
+        |> Seq.map (fun message -> client |> produce message ct)
+        |> Async.Parallel
+        |> Async.map Result.choose
+
+let produceOkSeq dataRes ct =
+    fun client -> dataRes |> ResultAsync.bindAsync (fun data -> client |> produceSeq data ct)
+
+let produceResultSeq dataRes chatId ct =
     fun client ->
         async {
             match! dataRes with
