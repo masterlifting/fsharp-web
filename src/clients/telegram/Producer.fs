@@ -140,7 +140,7 @@ let produceSeq data ct =
     fun client ->
         data
         |> Seq.map (fun message -> client |> produce message ct)
-        |> Async.Parallel
+        |> Async.Sequential
         |> Async.map Result.choose
 
 let produceOk dataRes ct =
