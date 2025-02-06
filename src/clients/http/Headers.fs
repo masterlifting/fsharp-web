@@ -23,9 +23,11 @@ let set (headers: Headers) (client: HttpClient) =
         |> Seq.map (fun x ->
             let values =
                 match client.DefaultRequestHeaders.TryGetValues x.Key with
-                | true, existingValues -> x.Value |> Seq.append existingValues
+                | true, existingValues ->
+                    match existingValues with
+                    | null -> x.Value
+                    | values -> x.Value |> Seq.append values |> Seq.toList
                 | _ -> x.Value
-                |> Seq.toList
 
             (x.Key, values))
         |> Seq.map (fun (key, values) -> client |> update key values)

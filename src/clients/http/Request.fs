@@ -20,11 +20,16 @@ let get (request: Request) (ct: CancellationToken) (client: HttpClient) =
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
+                    let createError msg =
+                        { Message = msg
+                          Code = response.StatusCode |> Http |> Some }
+                        |> Operation
+                        |> Error
+
                     return
-                        Error
-                        <| Operation
-                            { Message = response.ReasonPhrase
-                              Code = response.StatusCode |> Http |> Some }
+                        match response.ReasonPhrase with
+                        | null -> "Unknown reasonPhrase" |> createError
+                        | reasonPhrase -> reasonPhrase |> createError
         with ex ->
             return
                 Error
@@ -50,11 +55,16 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
+                    let createError msg =
+                        { Message = msg
+                          Code = response.StatusCode |> Http |> Some }
+                        |> Operation
+                        |> Error
+
                     return
-                        Error
-                        <| Operation
-                            { Message = response.ReasonPhrase
-                              Code = response.StatusCode |> Http |> Some }
+                        match response.ReasonPhrase with
+                        | null -> "Unknown reasonPhrase" |> createError
+                        | reasonPhrase -> reasonPhrase |> createError
 
         with ex ->
             return

@@ -9,9 +9,12 @@ type internal Telegram.Bot.Types.CallbackQuery with
     member this.ToDomain() =
         match this.Data with
         | AP.IsString data ->
-            { Id = this.Message.MessageId
-              ChatId = this.From.Id |> ChatId
-              Value = data }
-            |> CallbackQuery
-            |> Ok
+            match this.Message with
+            | null -> "Callback query message" |> NotFound |> Error
+            | message ->
+                { Id = message.MessageId
+                  ChatId = this.From.Id |> ChatId
+                  Value = data }
+                |> CallbackQuery
+                |> Ok
         | _ -> "Callback query data" |> NotFound |> Error
