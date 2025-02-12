@@ -100,12 +100,12 @@ module private Produce =
                 data
                 |> Seq.chunkBySize columns
                 |> Seq.map (Seq.map toResult)
-                |> InlineKeyboardMarkup
+                |> ReplyKeyboardMarkup
 
             async {
                 try
                     let toCallbackData (item: KeyValuePair<string, string>) =
-                        InlineKeyboardButton.WithCallbackData(item.Value, item.Key)
+                        ReplyKeyboardMarkup(item.Value, item.Key)
 
                     let markup =
                         dto.Value.Data |> toColumnedMarkup dto.Value.Columns toCallbackData |> Some
