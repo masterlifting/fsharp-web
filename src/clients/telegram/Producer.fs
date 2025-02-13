@@ -5,7 +5,6 @@ open Telegram.Bot
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Telegram.Domain
-open System.Collections.Generic
 open Web.Telegram.Domain.Producer
 open Telegram.Bot.Types.ReplyMarkups
 
@@ -34,54 +33,43 @@ module Buttons =
             |> Buttons
 
 module private Produce =
-    let private send (dto: Dto<string>) ct =
-        fun (client: TelegramBot) ->
-            match dto.Id with
+    let private send (msg: Dto<string>) ct =
+        fun (client: TelegramBot) (markup: #IReplyMarkup option) ->
+            match msg.Id with
             | New ->
-                fun markup ->
-                    match markup with
-                    | Some markup ->
-                        client.SendMessage(dto.ChatId.Value, dto.Value, replyMarkup = markup, cancellationToken = ct)
-                    | None -> client.SendMessage(dto.ChatId.Value, dto.Value, cancellationToken = ct)
+                match markup with
+                | Some markup ->
+                    client.SendMessage(msg.ChatId.Value, msg.Value, replyMarkup = markup, cancellationToken = ct)
+                | None -> client.SendMessage(msg.ChatId.Value, msg.Value, cancellationToken = ct)
             | Reply messageId ->
-
-                fun markup ->
-                    match markup with
-                    | Some markup ->
-                        client.SendMessage(
-                            dto.ChatId.Value,
-                            dto.Value,
-                            replyParameters = messageId,
-                            replyMarkup = markup,
-                            cancellationToken = ct
-                        )
-                    | None ->
-                        client.SendMessage(
-                            dto.ChatId.Value,
-                            dto.Value,
-                            replyParameters = messageId,
-                            cancellationToken = ct
-                        )
+                match markup with
+                | Some markup ->
+                    client.SendMessage(
+                        msg.ChatId.Value,
+                        msg.Value,
+                        replyParameters = messageId,
+                        replyMarkup = markup,
+                        cancellationToken = ct
+                    )
+                | None ->
+                    client.SendMessage(msg.ChatId.Value, msg.Value, replyParameters = messageId, cancellationToken = ct)
             | Replace messageId ->
-
-                fun markup ->
-                    match markup with
-                    | Some markup ->
-                        client.EditMessageText(
-                            dto.ChatId.Value,
-                            messageId,
-                            dto.Value,
-                            replyMarkup = markup,
-                            cancellationToken = ct
-                        )
-                    | None -> client.EditMessageText(dto.ChatId.Value, messageId, dto.Value, cancellationToken = ct)
+                match markup with
+                | Some markup ->
+                    client.EditMessageText(
+                        msg.ChatId.Value,
+                        messageId,
+                        msg.Value,
+                        replyMarkup = markup,
+                        cancellationToken = ct
+                    )
+                | None -> client.EditMessageText(msg.ChatId.Value, messageId, msg.Value, cancellationToken = ct)
 
     let text (dto: Dto<string>) ct =
         fun (client: TelegramBot) ->
             async {
                 try
                     let sendMessage = client |> send dto ct
-
                     let! result = sendMessage None |> Async.AwaitTask
 
                     return Ok result.MessageId
@@ -96,27 +84,21 @@ module private Produce =
     let buttons (dto: Dto<Buttons>) ct =
         fun (client: TelegramBot) ->
 
-            let inline toColumnedMarkup columns toResult data =
-                data
-                |> Seq.chunkBySize columns
-                |> Seq.map (Seq.map toResult)
-                |> ReplyKeyboardMarkup
-
             async {
                 try
-                    let toCallbackData (item: KeyValuePair<string, string>) =
-                        ReplyKeyboardMarkup(item.Value, item.Key)
-
                     let markup =
-                        dto.Value.Data |> toColumnedMarkup dto.Value.Columns toCallbackData |> Some
+                        dto.Value.Data
+                        |> Seq.chunkBySize dto.Value.Columns
+                        |> Seq.map (Seq.map (fun item -> InlineKeyboardButton.WithCallbackData(item.Value, item.Key)))
+                        |> InlineKeyboardMarkup
+                        |> Some
 
-                    let dto =
+                    let msg =
                         { Id = dto.Id
                           ChatId = dto.ChatId
                           Value = dto.Value.Name }
 
-                    let sendMessage = client |> send dto ct
-
+                    let sendMessage = client |> send msg ct
                     let! result = sendMessage markup |> Async.AwaitTask
 
                     return Ok result.MessageId
