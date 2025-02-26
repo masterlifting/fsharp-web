@@ -24,16 +24,16 @@ module Text =
               Value = error.Message }
             |> Text
 
-module Buttons =
-    let create (value: Buttons) =
+module ButtonsGroup =
+    let create (value: ButtonsGroup) =
         fun (chatId, msgId) ->
             { Id = msgId
               ChatId = chatId
               Value = value }
-            |> Buttons
+            |> ButtonsGroup
 
 module private Produce =
-    let private send (msg: Dto<string>) ct =
+    let private send (msg: Payload<string>) ct =
         fun (client: TelegramBot) (markup: #IReplyMarkup option) ->
             match msg.Id with
             | New ->
@@ -65,7 +65,7 @@ module private Produce =
                     )
                 | None -> client.EditMessageText(msg.ChatId.Value, messageId, msg.Value, cancellationToken = ct)
 
-    let text (dto: Dto<string>) ct =
+    let text (dto: Payload<string>) ct =
         fun (client: TelegramBot) ->
             async {
                 try
@@ -81,15 +81,15 @@ module private Produce =
                               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
             }
 
-    let buttons (dto: Dto<Buttons>) ct =
+    let buttonsGroup (dto: Payload<ButtonsGroup>) ct =
         fun (client: TelegramBot) ->
 
             async {
                 try
                     let markup =
-                        dto.Value.Data
+                        dto.Value.Items
                         |> Seq.chunkBySize dto.Value.Columns
-                        |> Seq.map (Seq.map (fun item -> InlineKeyboardButton.WithCallbackData(item.Value, item.Key)))
+                        |> Seq.map (Seq.map (fun item -> InlineKeyboardButton.WithCallbackData(item.Value, item.Key.Value)))
                         |> InlineKeyboardMarkup
                         |> Some
 
@@ -111,41 +111,11 @@ module private Produce =
                               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
             }
     
-    let webApps (dto: Dto<WebApps>) ct =
-        fun (client: TelegramBot) ->
-
-            async {
-                try
-                    let markup =
-                        dto.Value.Data
-                        |> Seq.chunkBySize dto.Value.Columns
-                        |> Seq.map (Seq.map (fun item -> InlineKeyboardButton.WithUrl(item.Value, item.Key)))
-                        |> InlineKeyboardMarkup
-                        |> Some
-
-                    let msg =
-                        { Id = dto.Id
-                          ChatId = dto.ChatId
-                          Value = dto.Value.Name }
-
-                    let sendMessage = client |> send msg ct
-                    let! result = sendMessage markup |> Async.AwaitTask
-
-                    return Ok result.MessageId
-
-                with ex ->
-                    return
-                        Error
-                        <| Operation
-                            { Message = ex |> Exception.toMessage
-                              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
-            }
-
 let produce data ct =
     fun client ->
         match data with
         | Text dto -> client |> Produce.text dto ct
-        | Buttons dto -> client |> Produce.buttons dto ct
+        | ButtonsGroup dto -> client |> Produce.buttonsGroup dto ct
         | _ -> $"{data}" |> NotSupported |> Error |> async.Return
 
 let produceOk dataRes ct =
