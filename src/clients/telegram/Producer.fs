@@ -110,6 +110,36 @@ module private Produce =
                             { Message = ex |> Exception.toMessage
                               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
             }
+    
+    let webApps (dto: Dto<WebApps>) ct =
+        fun (client: TelegramBot) ->
+
+            async {
+                try
+                    let markup =
+                        dto.Value.Data
+                        |> Seq.chunkBySize dto.Value.Columns
+                        |> Seq.map (Seq.map (fun item -> InlineKeyboardButton.WithUrl(item.Value, item.Key)))
+                        |> InlineKeyboardMarkup
+                        |> Some
+
+                    let msg =
+                        { Id = dto.Id
+                          ChatId = dto.ChatId
+                          Value = dto.Value.Name }
+
+                    let sendMessage = client |> send msg ct
+                    let! result = sendMessage markup |> Async.AwaitTask
+
+                    return Ok result.MessageId
+
+                with ex ->
+                    return
+                        Error
+                        <| Operation
+                            { Message = ex |> Exception.toMessage
+                              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+            }
 
 let produce data ct =
     fun client ->

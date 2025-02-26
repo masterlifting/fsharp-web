@@ -18,7 +18,7 @@ type Buttons =
 type WebApps =
     { Name: string
       Columns: int
-      Data: Map<string, Uri> }
+      Data: Map<string, string> }
 
 type Data =
     | Text of Dto<string>
