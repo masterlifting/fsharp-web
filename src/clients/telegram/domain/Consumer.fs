@@ -2,7 +2,10 @@
 
 open Infrastructure.Domain
 
-type Dto<'a> = { Id: int; ChatId: ChatId; Value: 'a }
+type Payload<'a> =
+    { ChatId: ChatId
+      MessageId: int
+      Value: 'a }
 
 type Photo =
     { FileId: string
@@ -21,25 +24,25 @@ type Video =
       MimeType: string }
 
 type Message =
-    | Text of Dto<string>
-    | Photo of Dto<Photo seq>
-    | Audio of Dto<Audio>
-    | Video of Dto<Video>
+    | Text of Payload<string>
+    | Photo of Payload<Photo seq>
+    | Audio of Payload<Audio>
+    | Video of Payload<Video>
 
 type Data =
     | Message of Message
     | EditedMessage of Message
-    | ChannelPost of Dto<string>
-    | EditedChannelPost of Dto<string>
-    | CallbackQuery of Dto<string>
-    | InlineQuery of Dto<string>
-    | ChosenInlineResult of Dto<string>
-    | ShippingQuery of Dto<string>
-    | PreCheckoutQuery of Dto<string>
-    | Poll of Dto<string>
-    | PollAnswer of Dto<string>
-    | MyChatMember of Dto<string>
-    | ChatMember of Dto<string>
-    | Unknown of Dto<string>
+    | ChannelPost of Payload<string>
+    | EditedChannelPost of Payload<string>
+    | CallbackQuery of Payload<string>
+    | InlineQuery of Payload<string>
+    | ChosenInlineResult of Payload<string>
+    | ShippingQuery of Payload<string>
+    | PreCheckoutQuery of Payload<string>
+    | Poll of Payload<string>
+    | PollAnswer of Payload<string>
+    | MyChatMember of Payload<string>
+    | ChatMember of Payload<string>
+    | Unknown of Payload<string>
 
 type Handler = TelegramBot * (Data -> Async<Result<unit, Error'>>)

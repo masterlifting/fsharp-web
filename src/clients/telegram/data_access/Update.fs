@@ -12,7 +12,7 @@ type internal Telegram.Bot.Types.Update with
         | UpdateType.Message ->
             match this.Message with
             | null -> "Message" |> NotFound |> Error
-            | editedMessage -> editedMessage.ToDomain()
+            | message -> message.ToDomain()
         | UpdateType.EditedMessage ->
             match this.EditedMessage with
             | null -> "Edited message" |> NotFound |> Error

@@ -12,7 +12,7 @@ type internal Telegram.Bot.Types.CallbackQuery with
             match this.Message with
             | null -> "Callback query message" |> NotFound |> Error
             | message ->
-                { Id = message.MessageId
+                { MessageId = message.MessageId
                   ChatId = this.From.Id |> ChatId
                   Value = data }
                 |> CallbackQuery
