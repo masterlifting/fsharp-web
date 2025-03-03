@@ -39,11 +39,21 @@ type Button =
     { Name: string
       Callback: ButtonCallback }
 
+    static member create name callback = { Name = name; Callback = callback }
+
 type ButtonsGroup =
     { Name: string
       Columns: int
-      Items: Button Set }
+      Buttons: Button Set }
 
 type Message =
     | Text of Payload<string>
     | ButtonsGroup of Payload<ButtonsGroup>
+
+    static member createNew chatId (create: ChatId * MessageId -> Message) = (chatId, New) |> create
+
+    static member tryReplace (msgId: int option) chatId (create: ChatId * MessageId -> Message) =
+        match msgId with
+        | Some id -> (chatId, Replace id)
+        | _ -> (chatId, New)
+        |> create

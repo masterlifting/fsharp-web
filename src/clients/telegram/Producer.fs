@@ -83,7 +83,7 @@ module private Produce =
             async {
                 try
                     let markup =
-                        payload.Value.Items
+                        payload.Value.Buttons
                         |> Seq.chunkBySize payload.Value.Columns
                         |> Seq.map (
                             Seq.map (fun button ->
