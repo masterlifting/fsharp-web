@@ -34,7 +34,7 @@ module ButtonsGroup =
 
 module private Produce =
     let private send text (markup: #IReplyMarkup option) =
-        fun (chatId: ChatId) (messageId: MessageId) ct (client: TelegramBot) ->
+        fun (chatId: ChatId) (messageId: MessageId) ct (client: Client) ->
             let chatId = chatId.Value
 
             match messageId with
@@ -60,7 +60,7 @@ module private Produce =
                 | None -> client.EditMessageText(chatId, messageId, text, cancellationToken = ct)
 
     let text (payload: Payload<string>) ct =
-        fun (client: TelegramBot) ->
+        fun (client: Client) ->
             async {
                 try
                     let! result =
@@ -78,7 +78,7 @@ module private Produce =
             }
 
     let buttonsGroup (payload: Payload<ButtonsGroup>) ct =
-        fun (client: TelegramBot) ->
+        fun (client: Client) ->
 
             async {
                 try

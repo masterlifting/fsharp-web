@@ -9,7 +9,7 @@ open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Http.Domain
 
-let get (request: Request) (ct: CancellationToken) (client: HttpClient) =
+let get (request: Request) (ct: CancellationToken) (client: Client) =
     async {
         try
             match client |> Headers.set request.Headers with
@@ -38,7 +38,7 @@ let get (request: Request) (ct: CancellationToken) (client: HttpClient) =
                       Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
     }
 
-let post (request: Request) (content: RequestContent) (ct: CancellationToken) (client: HttpClient) =
+let post (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) =
     async {
         try
             match client |> Headers.set request.Headers with

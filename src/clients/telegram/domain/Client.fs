@@ -5,8 +5,8 @@ open System.Collections.Concurrent
 open Infrastructure.Domain
 open Telegram.Bot
 
-type TelegramBot = TelegramBotClient
-type ClientFactory = ConcurrentDictionary<string, TelegramBot>
+type Client = TelegramBotClient
+type ClientFactory = ConcurrentDictionary<string, Client>
 
 type Token =
     | Value of string

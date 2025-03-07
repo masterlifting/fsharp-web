@@ -5,7 +5,7 @@ open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Http.Domain
 
-let private update (key: string) (values: string seq) (client: HttpClient) =
+let private update (key: string) (values: string seq) (client: Client) =
     try
         let values = values |> Seq.distinct
         client.DefaultRequestHeaders.Remove key |> ignore
@@ -16,7 +16,7 @@ let private update (key: string) (values: string seq) (client: HttpClient) =
             { Message = ex |> Exception.toMessage
               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
 
-let set (headers: Headers) (client: HttpClient) =
+let set (headers: Headers) (client: Client) =
     match headers with
     | Some headers ->
         headers

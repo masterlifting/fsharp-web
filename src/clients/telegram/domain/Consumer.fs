@@ -45,4 +45,4 @@ type Data =
     | ChatMember of Payload<string>
     | Unknown of Payload<string>
 
-type Handler = TelegramBot * (Data -> Async<Result<unit, Error'>>)
+type Handler = Client * (Data -> Async<Result<unit, Error'>>)
