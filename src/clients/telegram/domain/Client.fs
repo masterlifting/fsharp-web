@@ -26,3 +26,5 @@ type ChatId =
             value |> int64 |> ChatId |> Ok
         with _ ->
             $"'{value}' for ChatId" |> NotSupported |> Error
+
+type Connection = { Token: Token }

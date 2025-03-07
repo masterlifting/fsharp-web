@@ -30,7 +30,7 @@ let private initByTokenEnv key =
     )
     |> Result.bind initByToken
 
-let init token =
-    match token with
+let init (connection: Connection) =
+    match connection.Token with
     | Token.Value token -> initByToken token
     | Token.EnvKey key -> initByTokenEnv key

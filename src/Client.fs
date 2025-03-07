@@ -7,7 +7,7 @@ type Type =
 
 type Connection =
     | Http of Http.Domain.Client.Connection
-    | Telegram of Web.Telegram.Domain.Client.Token
+    | Telegram of Telegram.Domain.Client.Connection
 
 let init connection =
     match connection with
