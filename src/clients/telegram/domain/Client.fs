@@ -8,10 +8,6 @@ open Telegram.Bot
 type Client = TelegramBotClient
 type ClientFactory = ConcurrentDictionary<string, Client>
 
-type Token =
-    | Value of string
-    | EnvKey of string
-
 type ChatId =
     | ChatId of int64
 
@@ -27,4 +23,4 @@ type ChatId =
         with _ ->
             $"'{value}' for ChatId" |> NotSupported |> Error
 
-type Connection = { Token: Token }
+type Connection = { Token: string }

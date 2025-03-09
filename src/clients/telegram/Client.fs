@@ -1,14 +1,14 @@
 module Web.Telegram.Client
 
-open System
-open Infrastructure
 open Infrastructure.Prelude
 open Infrastructure.Domain
 open Web.Telegram.Domain
 
 let private clients = ClientFactory()
 
-let private initByToken token =
+let init (connection: Connection) =
+    let token = connection.Token
+
     match clients.TryGetValue token with
     | true, client -> Ok client
     | _ ->
@@ -21,16 +21,3 @@ let private initByToken token =
             <| Operation
                 { Message = ex |> Exception.toMessage
                   Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
-
-let private initByTokenEnv key =
-    Configuration.getEnvVar key
-    |> Result.bind (
-        Option.map Ok
-        >> Option.defaultValue (Error <| NotFound $"Environment variable '{key}'.")
-    )
-    |> Result.bind initByToken
-
-let init (connection: Connection) =
-    match connection.Token with
-    | Token.Value token -> initByToken token
-    | Token.EnvKey key -> initByTokenEnv key
