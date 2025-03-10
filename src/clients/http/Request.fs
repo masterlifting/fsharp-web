@@ -21,7 +21,7 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
                 | true -> return Ok response
                 | false ->
                     let createError msg =
-                        { Message = msg
+                        { Message = $"{client.BaseAddress}{request.Path} {msg}"
                           Code = response.StatusCode |> Http |> Some }
                         |> Operation
                         |> Error
@@ -34,8 +34,8 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
             return
                 Error
                 <| Operation
-                    { Message = ex |> Exception.toMessage
-                      Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    { Message = $"{client.BaseAddress}{request.Path} {ex |> Exception.toMessage}" 
+                      Code = None }
     }
 
 let post (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) =
@@ -56,7 +56,7 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
                 | true -> return Ok response
                 | false ->
                     let createError msg =
-                        { Message = msg
+                        { Message = $"{client.BaseAddress}{request.Path} {msg}"
                           Code = response.StatusCode |> Http |> Some }
                         |> Operation
                         |> Error
@@ -70,6 +70,6 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
             return
                 Error
                 <| Operation
-                    { Message = ex |> Exception.toMessage
-                      Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    { Message = $"{client.BaseAddress}{request.Path} {ex |> Exception.toMessage}" 
+                      Code = None }
     }
