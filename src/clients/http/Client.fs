@@ -19,11 +19,11 @@ let private create (baseUrl: Uri) =
               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
 
 let init connection =
-    connection.BaseUrl
+    connection.Host
     |> Route.toUri
     |> Result.bind (fun uri ->
 
-        match clients.TryGetValue connection.BaseUrl with
+        match clients.TryGetValue connection.Host with
         | true, client -> Ok client
         | _ ->
             create uri
@@ -31,5 +31,5 @@ let init connection =
                 client
                 |> Headers.set connection.Headers
                 |> Result.map (fun client ->
-                    clients.TryAdd(connection.BaseUrl, client) |> ignore
+                    clients.TryAdd(connection.Host, client) |> ignore
                     client)))

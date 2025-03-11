@@ -9,4 +9,4 @@ type ClientFactory = ConcurrentDictionary<string, Client>
 
 type Headers = Map<string, string list> option
 
-type Connection = { BaseUrl: string; Headers: Headers }
+type Connection = { Host: string; Headers: Headers }

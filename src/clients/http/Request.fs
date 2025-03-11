@@ -20,8 +20,10 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
+                    let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+                    
                     let createError msg =
-                        { Message = $"{client.BaseAddress}{request.Path} {msg}"
+                        { Message = $"{client.BaseAddress}{request.Path} -> {msg} -> {responseContent}"
                           Code = response.StatusCode |> Http |> Some }
                         |> Operation
                         |> Error
@@ -34,7 +36,7 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
             return
                 Error
                 <| Operation
-                    { Message = $"{client.BaseAddress}{request.Path} {ex |> Exception.toMessage}" 
+                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}" 
                       Code = None }
     }
 
@@ -55,8 +57,10 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
                 match response.IsSuccessStatusCode with
                 | true -> return Ok response
                 | false ->
+                    let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+                    
                     let createError msg =
-                        { Message = $"{client.BaseAddress}{request.Path} {msg}"
+                        { Message = $"{client.BaseAddress}{request.Path} -> {msg} -> {responseContent}"
                           Code = response.StatusCode |> Http |> Some }
                         |> Operation
                         |> Error
@@ -70,6 +74,6 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
             return
                 Error
                 <| Operation
-                    { Message = $"{client.BaseAddress}{request.Path} {ex |> Exception.toMessage}" 
+                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}" 
                       Code = None }
     }

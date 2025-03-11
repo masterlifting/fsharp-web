@@ -133,7 +133,7 @@ let solveToInt ct (image: byte array) =
             match keyOpt with
             | None -> "ANTI_CAPTCHA_API_KEY" |> NotFound |> Error |> async.Return
             | Some key ->
-                { BaseUrl = "https://api.anti-captcha.com"
+                { Host = "https://api.anti-captcha.com"
                   Headers = None }
                 |> Http.Client.init
                 |> ResultAsync.wrap (createTask key image ct))
