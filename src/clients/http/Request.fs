@@ -21,7 +21,7 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
                 | true -> return Ok response
                 | false ->
                     let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-                    
+
                     let createError msg =
                         { Message = $"{client.BaseAddress}{request.Path} -> {msg} -> {responseContent}"
                           Code = response.StatusCode |> Http |> Some }
@@ -36,7 +36,7 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
             return
                 Error
                 <| Operation
-                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}" 
+                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}"
                       Code = None }
     }
 
@@ -58,7 +58,7 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
                 | true -> return Ok response
                 | false ->
                     let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-                    
+
                     let createError msg =
                         { Message = $"{client.BaseAddress}{request.Path} -> {msg} -> {responseContent}"
                           Code = response.StatusCode |> Http |> Some }
@@ -74,6 +74,6 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
             return
                 Error
                 <| Operation
-                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}" 
+                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}"
                       Code = None }
     }
