@@ -1,15 +1,15 @@
-﻿module Web.Http.Client
+﻿module Web.Clients.Http.Client
 
 open System
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Web.Http.Domain
+open Web.Clients.Domain.Http
 
-let private clients = ClientFactory()
+let private clients = Http.ClientFactory()
 
 let private create (baseUrl: Uri) =
     try
-        let client = new Client()
+        let client = new Http.Client()
         client.BaseAddress <- baseUrl
         Ok client
     with ex ->
@@ -18,7 +18,7 @@ let private create (baseUrl: Uri) =
             { Message = ex |> Exception.toMessage
               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
 
-let init connection =
+let init (connection: Http.Connection) =
     connection.Host
     |> Route.toUri
     |> Result.bind (fun uri ->

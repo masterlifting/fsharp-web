@@ -1,5 +1,5 @@
 ﻿[<RequireQualifiedAccess>]
-module Web.Http.Response
+module Web.Clients.Http.Response
 
 open System
 open System.Text.Json
@@ -8,7 +8,7 @@ open System.Net.Http
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Infrastructure.SerDe
-open Web.Http.Domain.Response
+open Web.Clients.Domain.Http.Response
 
 module String =
     let read (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =

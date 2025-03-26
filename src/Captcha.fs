@@ -5,7 +5,8 @@ open System
 open Infrastructure
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Web.Http.Domain
+open Web.Clients
+open Web.Clients.Domain.Http
 
 [<Literal>]
 let ERROR_CODE = "CaptchaErrorCode"

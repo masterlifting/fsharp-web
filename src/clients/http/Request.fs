@@ -1,5 +1,5 @@
 ﻿[<RequireQualifiedAccess>]
-module Web.Http.Request
+module Web.Clients.Http.Request
 
 open System
 open System.Threading
@@ -7,7 +7,7 @@ open System.Net.Http
 open System.Net.Http.Headers
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Web.Http.Domain
+open Web.Clients.Domain.Http
 
 let get (request: Request) (ct: CancellationToken) (client: Client) =
     async {

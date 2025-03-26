@@ -1,9 +1,8 @@
-﻿module Web.Http.Route
+﻿module Web.Clients.Http.Route
 
 open System
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Web.Http.Domain.Client
 
 let toUri (url: string) =
     try
