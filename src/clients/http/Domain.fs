@@ -1,4 +1,4 @@
-﻿module Web.Clients.Domain.Http.Http
+﻿module Web.Clients.Domain.Http
 
 open System
 open System.Collections.Concurrent
@@ -18,7 +18,7 @@ type RequestContent =
         {| Data: string
            Encoding: Text.Encoding
            MediaType: string |}
-           
+
 type Response<'a> =
     { Content: 'a
       StatusCode: int

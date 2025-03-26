@@ -14,7 +14,7 @@
     <Compile Include="clients\telegram\Client.fs" />
     <Compile Include="clients\telegram\Consumer.fs" />
     <Compile Include="clients\telegram\Producer.fs" />
-    <Compile Include="clients\http\domain\Http.fs" />
+    <Compile Include="clients\http\Domain.fs" />
     <Compile Include="clients\http\Route.fs" />
     <Compile Include="clients\http\Headers.fs" />
     <Compile Include="clients\http\Client.fs" />

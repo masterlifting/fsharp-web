@@ -5,11 +5,11 @@ open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients.Domain.Http
 
-let private clients = Http.ClientFactory()
+let private clients = ClientFactory()
 
 let private create (baseUrl: Uri) =
     try
-        let client = new Http.Client()
+        let client = new Client()
         client.BaseAddress <- baseUrl
         Ok client
     with ex ->
@@ -18,7 +18,7 @@ let private create (baseUrl: Uri) =
             { Message = ex |> Exception.toMessage
               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
 
-let init (connection: Http.Connection) =
+let init (connection: Connection) =
     connection.Host
     |> Route.toUri
     |> Result.bind (fun uri ->

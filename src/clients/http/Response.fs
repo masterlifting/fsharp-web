@@ -8,7 +8,7 @@ open System.Net.Http
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Infrastructure.SerDe
-open Web.Clients.Domain.Http.Response
+open Web.Clients.Domain.Http
 
 module String =
     let read (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =

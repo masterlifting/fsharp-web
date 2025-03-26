@@ -5,5 +5,5 @@ open System.Threading
 open Infrastructure.Domain
 open Web.Clients.Domain.Http
 
-let start (ct: CancellationToken) (client: Client) =
+let start (_: CancellationToken) (_: Client) =
     async { return Error <| NotSupported "Http.listen." }

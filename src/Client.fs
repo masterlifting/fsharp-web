@@ -3,7 +3,6 @@ module Web.Client
 
 open Web.Clients
 open Web.Clients.Domain
-open Web.Clients.Domain.Http
 open Web.Clients.Domain.Telegram
 
 type Provider =

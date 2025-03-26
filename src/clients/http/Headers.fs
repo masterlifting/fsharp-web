@@ -5,7 +5,7 @@ open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients.Domain.Http
 
-let private update (key: string) (values: string seq) (client: Http.Client) =
+let private update (key: string) (values: string seq) (client: Client) =
     try
         let values = values |> Seq.distinct
         client.DefaultRequestHeaders.Remove key |> ignore
@@ -16,7 +16,7 @@ let private update (key: string) (values: string seq) (client: Http.Client) =
             { Message = ex |> Exception.toMessage
               Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
 
-let set (headers: Http.Headers) (client: Http.Client) =
+let set (headers: Headers) (client: Client) =
     match headers with
     | Some headers ->
         headers
@@ -35,7 +35,7 @@ let set (headers: Http.Headers) (client: Http.Client) =
         |> Result.map (fun _ -> client)
     | None -> Ok client
 
-let get (response: HttpResponseMessage) : Http.Headers =
+let get (response: HttpResponseMessage) : Headers =
     try
         response.Headers
         |> Seq.map (fun header -> header.Key, header.Value |> Seq.toList)
@@ -44,7 +44,7 @@ let get (response: HttpResponseMessage) : Http.Headers =
     with _ ->
         None
 
-let find (key: string) (patterns: string seq) (headers: Http.Headers) =
+let find (key: string) (patterns: string seq) (headers: Headers) =
     match headers with
     | None -> Error <| NotFound "Headers."
     | Some headers ->
@@ -71,7 +71,7 @@ let find (key: string) (patterns: string seq) (headers: Http.Headers) =
                 |> Seq.toList
                 |> Ok
 
-let tryFind (key: string) (patterns: string seq) (headers: Http.Headers) =
+let tryFind (key: string) (patterns: string seq) (headers: Headers) =
     match find key patterns headers with
     | Ok values -> Some values
     | _ -> None
