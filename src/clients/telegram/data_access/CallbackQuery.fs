@@ -1,9 +1,9 @@
-﻿module Web.Telegram.DataAccess.CallbackQuery
+﻿module Web.Clients.DataAccess.Telegram.CallbackQuery
 
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Web.Telegram.Domain
-open Web.Telegram.Domain.Consumer
+open Web.Clients.Domain.Telegram
+open Web.Clients.Domain.Telegram.Consumer
 
 type internal Telegram.Bot.Types.CallbackQuery with
     member this.ToDomain() =

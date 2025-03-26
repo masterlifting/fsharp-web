@@ -1,8 +1,8 @@
-module Web.Telegram.Client
+module Web.Clients.Telegram.Client
 
 open Infrastructure.Prelude
 open Infrastructure.Domain
-open Web.Telegram.Domain
+open Web.Clients.Domain.Telegram
 
 let private clients = ClientFactory()
 

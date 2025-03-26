@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Web.Telegram.Domain.Client
+module Web.Clients.Domain.Telegram.Telegram
 
 open System.Collections.Concurrent
 open Infrastructure.Domain

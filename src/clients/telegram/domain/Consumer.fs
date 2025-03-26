@@ -1,4 +1,4 @@
-﻿module Web.Telegram.Domain.Consumer
+﻿module Web.Clients.Domain.Telegram.Consumer
 
 open Infrastructure.Domain
 

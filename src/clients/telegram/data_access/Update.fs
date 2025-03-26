@@ -1,9 +1,9 @@
-﻿module Web.Telegram.DataAccess.Update
+﻿module Web.Clients.DataAccess.Telegram.Update
 
 open Infrastructure.Domain
 open Telegram.Bot.Types.Enums
-open Web.Telegram.DataAccess.Message
-open Web.Telegram.DataAccess.CallbackQuery
+open Web.Clients.DataAccess.Telegram.Message
+open Web.Clients.DataAccess.Telegram.CallbackQuery
 
 
 type internal Telegram.Bot.Types.Update with

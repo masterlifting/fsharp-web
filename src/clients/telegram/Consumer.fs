@@ -1,12 +1,12 @@
-﻿module Web.Telegram.Consumer
+﻿module Web.Clients.Telegram.Consumer
 
 open System
 open Telegram.Bot
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Infrastructure.Logging
-open Web.Telegram.Domain
-open Web.Telegram.DataAccess.Update
+open Web.Clients.Domain.Telegram
+open Web.Clients.DataAccess.Telegram.Update
 
 let private createOffset updateIds =
     updateIds |> Array.max |> (fun id -> id + 1 |> Nullable)

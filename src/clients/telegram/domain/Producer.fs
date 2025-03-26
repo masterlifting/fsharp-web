@@ -1,4 +1,4 @@
-﻿module Web.Telegram.Domain.Producer
+﻿module Web.Clients.Domain.Telegram.Producer
 
 open System
 

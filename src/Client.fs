@@ -1,13 +1,17 @@
 ﻿[<RequireQualifiedAccess>]
 module Web.Client
 
+open Web.Clients
+open Web.Clients.Domain
+open Web.Clients.Domain.Telegram
+
 type Provider =
     | Http of Http.Domain.Client.Client
-    | Telegram of Telegram.Domain.Client.Client
+    | Telegram of Telegram.Client
 
 type Connection =
     | Http of Http.Domain.Client.Connection
-    | Telegram of Telegram.Domain.Client.Connection
+    | Telegram of Telegram.Connection
 
 let init connection =
     match connection with
@@ -16,7 +20,7 @@ let init connection =
 
 type Consumer =
     | Http of Http.Domain.Client.Client
-    | Telegram of Telegram.Domain.Consumer.Handler
+    | Telegram of Telegram.Consumer.Handler
 
 let consume consumer ct =
     match consumer with

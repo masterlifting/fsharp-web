@@ -1,11 +1,11 @@
-﻿module Web.Telegram.Producer
+﻿module Web.Clients.Telegram.Producer
 
 open System
 open Telegram.Bot
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Web.Telegram.Domain
-open Web.Telegram.Domain.Producer
+open Web.Clients.Domain.Telegram
+open Web.Clients.Domain.Telegram.Producer
 open Telegram.Bot.Types.ReplyMarkups
 
 module Text =

@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="clients\telegram\domain\Client.fs" />
+    <Compile Include="clients\telegram\domain\Telegram.fs" />
     <Compile Include="clients\telegram\domain\Consumer.fs" />
     <Compile Include="clients\telegram\domain\Producer.fs" />
     <Compile Include="clients\telegram\data_access\Message.fs" />
