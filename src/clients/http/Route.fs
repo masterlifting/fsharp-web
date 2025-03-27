@@ -15,7 +15,7 @@ let fromQueryParams (queryParams: string) =
     |> Array.map (fun parameter ->
         match parameter.Split('=') with
         | parts when parts.Length = 2 -> Ok <| (parts[0], parts[1])
-        | _ -> Error <| NotSupported $"Query parameter '{parameter}'")
+        | _ -> Error <| NotSupported $"Http query parameter '{parameter}'")
     |> Result.choose
     |> Result.map Map
 

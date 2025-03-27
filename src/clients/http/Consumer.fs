@@ -6,4 +6,4 @@ open Infrastructure.Domain
 open Web.Clients.Domain.Http
 
 let start (_: CancellationToken) (_: Client) =
-    async { return Error <| NotSupported "Http.listen." }
+    async { return Error <| NotSupported "Http consumer" }

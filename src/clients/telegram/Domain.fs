@@ -20,7 +20,7 @@ type ChatId =
         try
             value |> int64 |> ChatId |> Ok
         with _ ->
-            $"'{value}' for ChatId" |> NotSupported |> Error
+            $"Chat Id '{value}'" |> NotSupported |> Error
 
 type Connection = { Token: string }
 

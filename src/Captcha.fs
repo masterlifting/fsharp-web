@@ -9,6 +9,9 @@ open Web.Clients
 open Web.Clients.Domain.Http
 
 [<Literal>]
+let ANTI_CAPTCHA_API_KEY = "ANTI_CAPTCHA_API_KEY"
+
+[<Literal>]
 let ERROR_CODE = "CaptchaErrorCode"
 
 [<Struct>]
@@ -76,7 +79,7 @@ let private handleTaskResult tryAgain attempts result =
             return
                 Error
                 <| Operation
-                    { Message = $"Captcha. {error}"
+                    { Message = $"Captcha API has received the error '{error}'."
                       Code = ERROR_CODE |> Custom |> Some }
         | None, "ready" ->
             return
@@ -85,7 +88,7 @@ let private handleTaskResult tryAgain attempts result =
                 | _ ->
                     Error
                     <| Operation
-                        { Message = $"Captcha. The '{result.Solution.Text}' is not an integer."
+                        { Message = $"Captcha API says that '{result.Solution.Text}' is not an integer."
                           Code = ERROR_CODE |> Custom |> Some }
         | _ ->
             do! Async.Sleep 500
@@ -101,7 +104,7 @@ let private getTaskResult ct key httpClient task =
         | 0 ->
             Error
             <| Operation
-                { Message = "Captcha. No attempts left."
+                { Message = "No attempts left for the Captcha API task."
                   Code = ERROR_CODE |> Custom |> Some }
             |> async.Return
         | _ ->
@@ -127,12 +130,12 @@ let private createTask key image ct httpClient =
 
 let solveToInt ct (image: byte array) =
     match image.Length with
-    | 0 -> "Captcha. Image to solve." |> NotFound |> Error |> async.Return
+    | 0 -> "Image to solve for Captcha API" |> NotFound |> Error |> async.Return
     | _ ->
-        Configuration.getEnvVar "ANTI_CAPTCHA_API_KEY"
+        Configuration.getEnvVar ANTI_CAPTCHA_API_KEY
         |> ResultAsync.wrap (fun keyOpt ->
             match keyOpt with
-            | None -> "ANTI_CAPTCHA_API_KEY" |> NotFound |> Error |> async.Return
+            | None -> ANTI_CAPTCHA_API_KEY |> NotFound |> Error |> async.Return
             | Some key ->
                 { Host = "https://api.anti-captcha.com"
                   Headers = None }

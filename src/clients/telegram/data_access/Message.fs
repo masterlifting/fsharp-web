@@ -17,5 +17,5 @@ type internal Telegram.Bot.Types.Message with
                 |> Text
                 |> Message
                 |> Ok
-            | _ -> "Message text" |> NotFound |> Error
-        | _ -> $"Message type: {this.Type}" |> NotSupported |> Error
+            | _ -> "Telegram 'Message' text" |> NotFound |> Error
+        | _ -> $"Telegram 'Message' type '{this.Type}'" |> NotSupported |> Error

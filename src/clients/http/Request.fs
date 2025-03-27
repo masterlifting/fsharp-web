@@ -22,21 +22,22 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
                 | false ->
                     let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
 
-                    let createError msg =
-                        { Message = $"{client.BaseAddress}{request.Path} -> {msg} -> {responseContent}"
-                          Code = response.StatusCode |> Http |> Some }
-                        |> Operation
-                        |> Error
+                    let createError reason =
+                        Error
+                        <| Operation
+                            { Message =
+                                $"'{client.BaseAddress}{request.Path}' has received the error: '%s{responseContent}'. Reason: '%s{reason}'"
+                              Code = response.StatusCode |> Http |> Some }
 
                     return
                         match response.ReasonPhrase with
-                        | null -> "Unknown reasonPhrase" |> createError
+                        | null -> "Unknown 'response.ReasonPhrase'" |> createError
                         | reasonPhrase -> reasonPhrase |> createError
         with ex ->
             return
                 Error
                 <| Operation
-                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}"
+                    { Message = $"'{client.BaseAddress}{request.Path}' {ex |> Exception.toMessage}"
                       Code = None }
     }
 
@@ -59,21 +60,22 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
                 | false ->
                     let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
 
-                    let createError msg =
-                        { Message = $"{client.BaseAddress}{request.Path} -> {msg} -> {responseContent}"
-                          Code = response.StatusCode |> Http |> Some }
-                        |> Operation
-                        |> Error
+                    let createError reason =
+                        Error
+                        <| Operation
+                            { Message =
+                                $"'{client.BaseAddress}{request.Path}' has received the error: '%s{responseContent}'. Reason: '%s{reason}'"
+                              Code = response.StatusCode |> Http |> Some }
 
                     return
                         match response.ReasonPhrase with
-                        | null -> "Unknown reasonPhrase" |> createError
+                        | null -> "Unknown 'response.ReasonPhrase'" |> createError
                         | reasonPhrase -> reasonPhrase |> createError
 
         with ex ->
             return
                 Error
                 <| Operation
-                    { Message = $"{client.BaseAddress}{request.Path} -> {ex |> Exception.toMessage}"
+                    { Message = $"'{client.BaseAddress}{request.Path}' {ex |> Exception.toMessage}"
                       Code = None }
     }

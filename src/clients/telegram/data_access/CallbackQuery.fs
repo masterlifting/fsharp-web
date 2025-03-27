@@ -10,11 +10,11 @@ type internal Telegram.Bot.Types.CallbackQuery with
         match this.Data with
         | AP.IsString data ->
             match this.Message with
-            | null -> "Callback query message" |> NotFound |> Error
+            | null -> "Telegram 'CallbackQuery' message" |> NotFound |> Error
             | message ->
                 { MessageId = message.MessageId
                   ChatId = this.From.Id |> ChatId
                   Value = data }
                 |> CallbackQuery
                 |> Ok
-        | _ -> "Callback query data" |> NotFound |> Error
+        | _ -> "Telegram 'CallbackQuery' data" |> NotFound |> Error

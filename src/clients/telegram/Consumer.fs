@@ -13,25 +13,25 @@ let private createOffset updateIds =
 
 let private handleTasks bot (tasks: Async<Result<unit, Error'>> array) =
     async {
-        $"{bot} Start handling messages: {tasks.Length}" |> Log.trace
+        $"{bot} start handling messages: {tasks.Length}" |> Log.trace
         let! results = tasks |> Async.Sequential
-        $"{bot} Handled messages: {results.Length}" |> Log.trace
+        $"{bot} finish handling messages: {results.Length}" |> Log.trace
 
         results
         |> Result.unzip
         |> snd
-        |> Seq.iter (fun error -> bot + ". " + error.Message |> Log.critical)
+        |> Seq.iter (fun error -> bot + " has encountered the error: " + error.Message |> Log.critical)
     }
 
 let start handler ct =
     fun (client: Client) ->
-        let bot = $"Telegram bot {client.BotId}"
+        let bot = $"Telegram bot '{client.BotId}'"
         let limitMsg = 10
         let restartAttempts = 50
         let timeoutSec = 60
         let defaultInt = Nullable<int>()
 
-        $"{bot} Started." |> Log.info
+        $"{bot} has been started." |> Log.info
 
         let rec innerLoop (offset: Nullable<int>) attempts =
             async {
@@ -40,7 +40,7 @@ let start handler ct =
                 else
 
                     if attempts <> restartAttempts then
-                        $"{bot} Has been restarted." |> Log.info
+                        $"{bot} has been restarted." |> Log.info
 
                     try
                         let! updates = client.GetUpdates(offset, limitMsg, timeoutSec, null, ct) |> Async.AwaitTask
@@ -66,13 +66,13 @@ let start handler ct =
                         if attempts > 0 then
                             let interval = 10000.0 * Math.Pow(1.2, float (restartAttempts - attempts)) |> int
                             do! Async.Sleep interval
-                            $"{bot} Restarting... Reason: {error}" |> Log.critical
+                            $"{bot} is restarting... Reason: {error}" |> Log.critical
                             return! innerLoop offset (attempts - 1)
                         else
                             return
                                 Error
                                 <| Operation
-                                    { Message = bot + ". " + error
+                                    { Message = bot + " has encountered the error: " + error
                                       Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
             }
 

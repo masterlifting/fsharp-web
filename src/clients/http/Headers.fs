@@ -46,13 +46,13 @@ let get (response: HttpResponseMessage) : Headers =
 
 let find (key: string) (patterns: string seq) (headers: Headers) =
     match headers with
-    | None -> Error <| NotFound "Headers."
+    | None -> Error <| NotFound "Http headers"
     | Some headers ->
         match headers |> Map.tryFind key with
-        | None -> Error <| NotFound $"Required header '{key}'."
+        | None -> Error <| NotFound $"Http required header '{key}'"
         | Some values ->
             match values with
-            | [] -> Error <| NotFound $"Required value of the header '{key}'."
+            | [] -> Error <| NotFound $"Http required value of the header '{key}'"
             | items ->
                 items
                 |> Seq.map (fun x ->
