@@ -71,7 +71,6 @@ let private createCreateTaskRequest key image =
 
     request, content
 
-
 let private handleTaskResult tryAgain attempts result =
     async {
         match result.ErrorDescription, result.Status with
