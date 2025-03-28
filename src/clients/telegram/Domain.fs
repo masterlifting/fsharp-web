@@ -26,26 +26,30 @@ type Connection = { Token: string }
 
 module Consumer =
 
-    type Payload<'a> =
-        { ChatId: ChatId
-          MessageId: int
-          Value: 'a }
+    type Payload<'a> = {
+        ChatId: ChatId
+        MessageId: int
+        Value: 'a
+    }
 
-    type Photo =
-        { FileId: string
-          FileSize: int64 option }
+    type Photo = {
+        FileId: string
+        FileSize: int64 option
+    }
 
-    type Audio =
-        { FileId: int
-          FileSize: int
-          Title: string
-          MimeType: string }
+    type Audio = {
+        FileId: int
+        FileSize: int
+        Title: string
+        MimeType: string
+    }
 
-    type Video =
-        { FileId: int
-          FileSize: int
-          FileName: string
-          MimeType: string }
+    type Video = {
+        FileId: int
+        FileSize: int
+        FileName: string
+        MimeType: string
+    }
 
     type Message =
         | Text of Payload<string>
@@ -80,10 +84,11 @@ module Producer =
         | Reply of int
         | Replace of int
 
-    type Payload<'a> =
-        { ChatId: ChatId
-          MessageId: MessageId
-          Value: 'a }
+    type Payload<'a> = {
+        ChatId: ChatId
+        MessageId: MessageId
+        Value: 'a
+    }
 
     [<CustomEquality; CustomComparison>]
     type ButtonCallback =
@@ -108,16 +113,18 @@ module Producer =
 
         override this.GetHashCode() = hash this.Value
 
-    type Button =
-        { Name: string
-          Callback: ButtonCallback }
+    type Button = {
+        Name: string
+        Callback: ButtonCallback
+    } with
 
         static member create name callback = { Name = name; Callback = callback }
 
-    type ButtonsGroup =
-        { Name: string
-          Columns: int
-          Buttons: Button Set }
+    type ButtonsGroup = {
+        Name: string
+        Columns: int
+        Buttons: Button Set
+    }
 
     type Message =
         | Text of Payload<string>

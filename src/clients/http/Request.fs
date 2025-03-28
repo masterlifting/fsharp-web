@@ -24,10 +24,11 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
 
                     let createError reason =
                         Error
-                        <| Operation
-                            { Message =
+                        <| Operation {
+                            Message =
                                 $"'{client.BaseAddress}{request.Path}' has received the error: '%s{responseContent}'. Reason: '%s{reason}'"
-                              Code = response.StatusCode |> Http |> Some }
+                            Code = response.StatusCode |> Http |> Some
+                        }
 
                     return
                         match response.ReasonPhrase with
@@ -36,9 +37,10 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
         with ex ->
             return
                 Error
-                <| Operation
-                    { Message = $"'{client.BaseAddress}{request.Path}' {ex |> Exception.toMessage}"
-                      Code = None }
+                <| Operation {
+                    Message = $"'{client.BaseAddress}{request.Path}' {ex |> Exception.toMessage}"
+                    Code = None
+                }
     }
 
 let post (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) =
@@ -62,10 +64,11 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
 
                     let createError reason =
                         Error
-                        <| Operation
-                            { Message =
+                        <| Operation {
+                            Message =
                                 $"'{client.BaseAddress}{request.Path}' has received the error: '%s{responseContent}'. Reason: '%s{reason}'"
-                              Code = response.StatusCode |> Http |> Some }
+                            Code = response.StatusCode |> Http |> Some
+                        }
 
                     return
                         match response.ReasonPhrase with
@@ -75,7 +78,8 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
         with ex ->
             return
                 Error
-                <| Operation
-                    { Message = $"'{client.BaseAddress}{request.Path}' {ex |> Exception.toMessage}"
-                      Code = None }
+                <| Operation {
+                    Message = $"'{client.BaseAddress}{request.Path}' {ex |> Exception.toMessage}"
+                    Code = None
+                }
     }

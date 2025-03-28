@@ -19,10 +19,11 @@ type Task = { TaskId: uint64 }
 
 type Solution = { Text: string }
 
-type TaskResult =
-    { Status: string
-      Solution: Solution
-      ErrorDescription: string option }
+type TaskResult = {
+    Status: string
+    Solution: Solution
+    ErrorDescription: string option
+}
 
 let private createGetTaskResultRequest key task =
     let data =
@@ -32,15 +33,17 @@ let private createGetTaskResultRequest key task =
                 ""taskId"":""{task.TaskId}""
             }}"
 
-    let request =
-        { Path = "/getTaskResult"
-          Headers = None }
+    let request = {
+        Path = "/getTaskResult"
+        Headers = None
+    }
 
     let content =
-        String
-            {| Data = data
-               Encoding = Text.Encoding.UTF8
-               MediaType = "application/json" |}
+        String {|
+            Data = data
+            Encoding = Text.Encoding.UTF8
+            MediaType = "application/json"
+        |}
 
     request, content
 
@@ -64,10 +67,11 @@ let private createCreateTaskRequest key image =
     let request = { Path = "/createTask"; Headers = None }
 
     let content =
-        String
-            {| Data = data
-               Encoding = Text.Encoding.UTF8
-               MediaType = "application/json" |}
+        String {|
+            Data = data
+            Encoding = Text.Encoding.UTF8
+            MediaType = "application/json"
+        |}
 
     request, content
 
@@ -77,18 +81,20 @@ let private handleTaskResult tryAgain attempts result =
         | Some error, _ ->
             return
                 Error
-                <| Operation
-                    { Message = $"Captcha API has received the error '{error}'."
-                      Code = ERROR_CODE |> Custom |> Some }
+                <| Operation {
+                    Message = $"Captcha API has received the error '{error}'."
+                    Code = ERROR_CODE |> Custom |> Some
+                }
         | None, "ready" ->
             return
                 match result.Solution.Text with
                 | AP.IsInt result -> Ok result
                 | _ ->
                     Error
-                    <| Operation
-                        { Message = $"Captcha API says that '{result.Solution.Text}' is not an integer."
-                          Code = ERROR_CODE |> Custom |> Some }
+                    <| Operation {
+                        Message = $"Captcha API says that '{result.Solution.Text}' is not an integer."
+                        Code = ERROR_CODE |> Custom |> Some
+                    }
         | _ ->
             do! Async.Sleep 500
             return! tryAgain attempts
@@ -102,9 +108,10 @@ let private getTaskResult ct key httpClient task =
         match attempts with
         | 0 ->
             Error
-            <| Operation
-                { Message = "No attempts left for the Captcha API task."
-                  Code = ERROR_CODE |> Custom |> Some }
+            <| Operation {
+                Message = "No attempts left for the Captcha API task."
+                Code = ERROR_CODE |> Custom |> Some
+            }
             |> async.Return
         | _ ->
             if ct |> canceled then
@@ -136,7 +143,9 @@ let solveToInt ct (image: byte array) =
             match keyOpt with
             | None -> ANTI_CAPTCHA_API_KEY |> NotFound |> Error |> async.Return
             | Some key ->
-                { Host = "https://api.anti-captcha.com"
-                  Headers = None }
+                {
+                    Host = "https://api.anti-captcha.com"
+                    Headers = None
+                }
                 |> Http.Client.init
                 |> ResultAsync.wrap (createTask key image ct))

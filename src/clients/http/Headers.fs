@@ -12,9 +12,10 @@ let private update (key: string) (values: string seq) (client: Client) =
         client.DefaultRequestHeaders.Add(key, values) |> Ok
     with ex ->
         Error
-        <| Operation
-            { Message = ex |> Exception.toMessage
-              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+        <| Operation {
+            Message = ex |> Exception.toMessage
+            Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+        }
 
 let set (headers: Headers) (client: Client) =
     match headers with

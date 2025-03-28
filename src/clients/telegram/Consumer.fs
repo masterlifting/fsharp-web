@@ -71,9 +71,10 @@ let start handler ct =
                         else
                             return
                                 Error
-                                <| Operation
-                                    { Message = bot + " has encountered the error: " + error
-                                      Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                                <| Operation {
+                                    Message = bot + " has encountered the error: " + error
+                                    Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                                }
             }
 
         innerLoop defaultInt restartAttempts

@@ -15,11 +15,14 @@ type Request = { Path: string; Headers: Headers }
 type RequestContent =
     | Bytes of byte[]
     | String of
-        {| Data: string
-           Encoding: Text.Encoding
-           MediaType: string |}
+        {|
+            Data: string
+            Encoding: Text.Encoding
+            MediaType: string
+        |}
 
-type Response<'a> =
-    { Content: 'a
-      StatusCode: int
-      Headers: Headers }
+type Response<'a> = {
+    Content: 'a
+    StatusCode: int
+    Headers: Headers
+}

@@ -12,24 +12,30 @@ module Text =
 
     let create (value: string) =
         fun (chatId, msgId) ->
-            { MessageId = msgId
-              ChatId = chatId
-              Value = value }
+            {
+                MessageId = msgId
+                ChatId = chatId
+                Value = value
+            }
             |> Text
 
     let createError (error: Error') =
         fun chatId ->
-            { MessageId = New
-              ChatId = chatId
-              Value = error.Message }
+            {
+                MessageId = New
+                ChatId = chatId
+                Value = error.Message
+            }
             |> Text
 
 module ButtonsGroup =
     let create (value: ButtonsGroup) =
         fun (chatId, msgId) ->
-            { MessageId = msgId
-              ChatId = chatId
-              Value = value }
+            {
+                MessageId = msgId
+                ChatId = chatId
+                Value = value
+            }
             |> ButtonsGroup
 
 module private Produce =
@@ -72,9 +78,10 @@ module private Produce =
                 with ex ->
                     return
                         Error
-                        <| Operation
-                            { Message = ex |> Exception.toMessage
-                              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                        <| Operation {
+                            Message = ex |> Exception.toMessage
+                            Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                        }
             }
 
     let buttonsGroup (payload: Payload<ButtonsGroup>) ct =
@@ -104,9 +111,10 @@ module private Produce =
                 with ex ->
                     return
                         Error
-                        <| Operation
-                            { Message = ex |> Exception.toMessage
-                              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                        <| Operation {
+                            Message = ex |> Exception.toMessage
+                            Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                        }
             }
 
 let produce message ct =

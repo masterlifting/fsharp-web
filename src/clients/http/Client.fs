@@ -14,9 +14,10 @@ let private create (baseUrl: Uri) =
         Ok client
     with ex ->
         Error
-        <| Operation
-            { Message = ex |> Exception.toMessage
-              Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+        <| Operation {
+            Message = ex |> Exception.toMessage
+            Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+        }
 
 let init (connection: Connection) =
     connection.Host

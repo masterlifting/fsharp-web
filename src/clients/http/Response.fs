@@ -20,16 +20,19 @@ module String =
 
                     return
                         Ok
-                        <| { StatusCode = response.StatusCode |> int
-                             Headers = response |> Headers.get
-                             Content = result }
+                        <| {
+                               StatusCode = response.StatusCode |> int
+                               Headers = response |> Headers.get
+                               Content = result
+                           }
                 | Error error -> return Error error
             with ex ->
                 return
                     Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    <| Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
         }
 
     let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -44,9 +47,10 @@ module String =
             with ex ->
                 return
                     Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    <| Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
         }
 
     let fromJson<'a> (response: Async<Result<string, Error'>>) =
@@ -64,16 +68,19 @@ module Bytes =
 
                     return
                         Ok
-                        <| { StatusCode = response.StatusCode |> int
-                             Headers = response |> Headers.get
-                             Content = result }
+                        <| {
+                               StatusCode = response.StatusCode |> int
+                               Headers = response |> Headers.get
+                               Content = result
+                           }
                 | Error error -> return Error error
             with ex ->
                 return
                     Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    <| Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
         }
 
     let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -88,9 +95,10 @@ module Bytes =
             with ex ->
                 return
                     Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    <| Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
         }
 
 module Stream =
@@ -103,16 +111,19 @@ module Stream =
 
                     return
                         Ok
-                        <| { StatusCode = response.StatusCode |> int
-                             Headers = response |> Headers.get
-                             Content = result }
+                        <| {
+                               StatusCode = response.StatusCode |> int
+                               Headers = response |> Headers.get
+                               Content = result
+                           }
                 | Error error -> return Error error
             with ex ->
                 return
                     Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    <| Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
         }
 
     let readContent (ct: CancellationToken) (response: Async<Result<HttpResponseMessage, Error'>>) =
@@ -127,9 +138,10 @@ module Stream =
             with ex ->
                 return
                     Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    <| Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
         }
 
 module Unit =
@@ -142,7 +154,8 @@ module Unit =
             with ex ->
                 return
                     Error
-                    <| Operation
-                        { Message = ex |> Exception.toMessage
-                          Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some }
+                    <| Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
         }

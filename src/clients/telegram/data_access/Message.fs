@@ -11,9 +11,11 @@ type internal Telegram.Bot.Types.Message with
         | Telegram.Bot.Types.Enums.MessageType.Text ->
             match this.Text with
             | AP.IsString text ->
-                { MessageId = this.MessageId
-                  ChatId = this.Chat.Id |> ChatId
-                  Value = text }
+                {
+                    MessageId = this.MessageId
+                    ChatId = this.Chat.Id |> ChatId
+                    Value = text
+                }
                 |> Text
                 |> Message
                 |> Ok
