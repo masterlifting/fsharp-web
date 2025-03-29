@@ -20,7 +20,7 @@ let private handleTasks bot (tasks: Async<Result<unit, Error'>> array) =
         results
         |> Result.unzip
         |> snd
-        |> Seq.iter (fun error -> bot + " has encountered the error: " + error.Message |> Log.critical)
+        |> Seq.iter (fun error -> bot + " got the error: " + error.Message |> Log.critical)
     }
 
 let start handler ct =
@@ -31,16 +31,16 @@ let start handler ct =
         let timeoutSec = 60
         let defaultInt = Nullable<int>()
 
-        $"{bot} has been started." |> Log.info
+        $"{bot} has started." |> Log.info
 
         let rec innerLoop (offset: Nullable<int>) attempts =
             async {
                 if ct |> canceled then
-                    return bot |> Canceled |> Error
+                    return $"{bot} loop canceled." |> Canceled |> Error
                 else
 
                     if attempts <> restartAttempts then
-                        $"{bot} has been restarted." |> Log.info
+                        $"{bot} has restarted." |> Log.info
 
                     try
                         let! updates = client.GetUpdates(offset, limitMsg, timeoutSec, null, ct) |> Async.AwaitTask
@@ -66,13 +66,13 @@ let start handler ct =
                         if attempts > 0 then
                             let interval = 10000.0 * Math.Pow(1.2, float (restartAttempts - attempts)) |> int
                             do! Async.Sleep interval
-                            $"{bot} is restarting... Reason: {error}" |> Log.critical
+                            $"{bot} is restarting... %s{error}" |> Log.critical
                             return! innerLoop offset (attempts - 1)
                         else
                             return
                                 Error
                                 <| Operation {
-                                    Message = bot + " has encountered the error: " + error
+                                    Message = bot + " got the error. " + error
                                     Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
                                 }
             }
