@@ -8,7 +8,8 @@ let toUri (url: string) =
     try
         Ok <| Uri url
     with ex ->
-        Error <| Operation {
+        Error
+        <| Operation {
             Message = $"Failed to parse url '{url}'. " + (ex |> Exception.toMessage)
             Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
         }

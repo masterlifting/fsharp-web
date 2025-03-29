@@ -28,4 +28,7 @@ type internal Telegram.Bot.Types.Update with
             match this.CallbackQuery with
             | null -> "Telegram 'CallbackQuery' type" |> NotFound |> Error
             | callbackQuery -> callbackQuery.ToDomain()
-        | _ -> $"Telegram 'Update' type '{this.Type}' is not supported." |> NotSupported |> Error
+        | _ ->
+            $"Telegram 'Update' type '{this.Type}' is not supported."
+            |> NotSupported
+            |> Error

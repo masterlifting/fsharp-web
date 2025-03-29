@@ -20,4 +20,7 @@ type internal Telegram.Bot.Types.Message with
                 |> Message
                 |> Ok
             | _ -> "Telegram 'Message' text" |> NotFound |> Error
-        | _ -> $"Telegram 'Message' type '{this.Type}' is not supported." |> NotSupported |> Error
+        | _ ->
+            $"Telegram 'Message' type '{this.Type}' is not supported."
+            |> NotSupported
+            |> Error
