@@ -1,4 +1,4 @@
-﻿module Web.Clients.Http.Client
+﻿module Web.Clients.Http.Provider
 
 open System
 open Infrastructure.Domain

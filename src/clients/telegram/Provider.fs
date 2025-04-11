@@ -1,4 +1,4 @@
-module Web.Clients.Telegram.Client
+module Web.Clients.Telegram.Provider
 
 open Infrastructure.Prelude
 open Infrastructure.Domain
