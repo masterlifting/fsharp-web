@@ -59,14 +59,20 @@ let find (key: string) (patterns: string seq) (headers: Headers) =
                 |> Seq.map (fun x ->
                     match x.Split ';' with
                     | [||] ->
-                        match patterns |> Seq.exists x.Contains with
+                        match patterns |> Seq.isEmpty with
                         | true -> Some [ x ]
-                        | _ -> None
+                        | false ->
+                            match patterns |> Seq.exists x.Contains with
+                            | true -> Some [ x ]
+                            | _ -> None
                     | parts ->
-                        parts
-                        |> Array.filter (fun x -> patterns |> Seq.exists x.Contains)
-                        |> Array.toList
-                        |> Some)
+                        match patterns |> Seq.isEmpty with
+                        | true -> parts |> Array.toList |> Some
+                        | false ->
+                            parts
+                            |> Array.filter (fun x -> patterns |> Seq.exists x.Contains)
+                            |> Array.toList
+                            |> Some)
                 |> Seq.choose id
                 |> Seq.concat
                 |> Seq.toList

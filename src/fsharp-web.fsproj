@@ -19,7 +19,8 @@
     <Compile Include="clients\http\Request.fs" />
     <Compile Include="clients\http\Response.fs" />
     <Compile Include="clients\http\Consumer.fs" />
-    <Compile Include="Client.fs" />
+    <Compile Include="clients\browser\Domain.fs" />
+    <Compile Include="clients\browser\Provider.fs" />
     <Compile Include="Captcha.fs" />
   </ItemGroup>
   <ItemGroup>
