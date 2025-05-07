@@ -1,28 +1,28 @@
 module Web.Clients.Domain.Browser
 
-open System
 open System.Collections.Concurrent
+open Microsoft.Playwright
 
-type Client = Net.Http.HttpClient
-type ClientFactory = ConcurrentDictionary<string, Client>
+type Provider =
+    | Provider of IBrowser
 
-type Headers = Map<string, string list> option
+    member this.Value =
+        match this with
+        | Provider client -> client
 
-type Connection = { Host: string; Headers: Headers }
+type Page =
+    | Page of IPage
 
-type Request = { Path: string; Headers: Headers }
+    member this.Value =
+        match this with
+        | Page page -> page
 
-type RequestContent =
-    | Bytes of byte[]
-    | String of
-        {|
-            Data: string
-            Encoding: Text.Encoding
-            MediaType: string
-        |}
+type ClientFactory = ConcurrentDictionary<string, Provider>
+type Connection = { Host: string }
 
-type Response<'a> = {
-    Content: 'a
-    StatusCode: int
-    Headers: Headers
-}
+type Selector =
+    | Selector of string
+
+    member this.Value =
+        match this with
+        | Selector selector -> selector
