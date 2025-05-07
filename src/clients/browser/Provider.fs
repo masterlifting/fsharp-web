@@ -13,7 +13,7 @@ let private create () =
         async {
             let! playwright = Playwright.CreateAsync() |> Async.AwaitTask
             let! browser =
-                playwright.Chromium.LaunchAsync(BrowserTypeLaunchOptions(Headless = true))
+                playwright.Chromium.LaunchAsync(BrowserTypeLaunchOptions(Headless = Nullable false))
                 |> Async.AwaitTask
             return browser |> Provider |> Ok
         }
