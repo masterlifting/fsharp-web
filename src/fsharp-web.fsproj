@@ -21,9 +21,11 @@
     <Compile Include="clients\http\Consumer.fs" />
     <Compile Include="clients\browser\Domain.fs" />
     <Compile Include="clients\browser\Provider.fs" />
+    <Compile Include="clients\browser\Html.fs" />
     <Compile Include="Captcha.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.12.1" />
     <PackageReference Include="Telegram.Bot" Version="22.1.3" />
   </ItemGroup>
   <ItemGroup>
