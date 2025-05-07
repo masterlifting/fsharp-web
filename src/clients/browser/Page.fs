@@ -2,6 +2,7 @@
 module Web.Clients.Browser.Page
 
 open System
+open System.Text.RegularExpressions
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients.Domain.Browser
@@ -33,6 +34,20 @@ let load (uri: Uri) (provider: Provider) =
         |> Error
         |> async.Return
 
+let waitFor (path: Regex) (page: Page) =
+    try
+        async {
+            do! page.Value.WaitForURLAsync(path) |> Async.AwaitTask
+            return page |> Ok
+        }
+    with ex ->
+        Operation {
+            Message = ex |> Exception.toMessage
+            Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+        }
+        |> Error
+        |> async.Return
+
 module Html =
 
     let tryFindText (selector: string) (page: Page) =
@@ -52,13 +67,12 @@ module Html =
             |> Error
             |> async.Return
 
-module Form =
+module Input =
 
     let fill (selector: Selector) (value: string) (page: Page) =
         try
             async {
                 do! page.Value.FillAsync(selector.Value, value) |> Async.AwaitTask
-                let! content = page.Value.ContentAsync() |> Async.AwaitTask
                 return page |> Ok
             }
         with ex ->
@@ -75,6 +89,22 @@ module Button =
         try
             async {
                 do! page.Value.ClickAsync(selector.Value) |> Async.AwaitTask
+                return page |> Ok
+            }
+        with ex ->
+            Operation {
+                Message = ex |> Exception.toMessage
+                Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+            }
+            |> Error
+            |> async.Return
+
+module Mouse =
+    
+    let shuffle (page: Page) =
+        try
+            async {
+                do! page.Value.Mouse.MoveAsync(0.f, 0.f) |> Async.AwaitTask
                 return page |> Ok
             }
         with ex ->
