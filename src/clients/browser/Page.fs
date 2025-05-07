@@ -57,7 +57,8 @@ module Form =
     let fill (selector: Selector) (value: string) (page: Page) =
         try
             async {
-                let! _ = page.Value.FillAsync(selector.Value, value) |> Async.AwaitTask
+                do! page.Value.FillAsync(selector.Value, value) |> Async.AwaitTask
+                let! content = page.Value.ContentAsync() |> Async.AwaitTask
                 return page |> Ok
             }
         with ex ->
@@ -73,7 +74,7 @@ module Button =
     let click (selector: Selector) (page: Page) =
         try
             async {
-                let! _ = page.Value.ClickAsync(selector.Value) |> Async.AwaitTask
+                do! page.Value.ClickAsync(selector.Value) |> Async.AwaitTask
                 return page |> Ok
             }
         with ex ->
