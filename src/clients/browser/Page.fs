@@ -101,10 +101,57 @@ module Button =
 
 module Mouse =
     
-    let shuffle (page: Page) =
+    let private getRandomCoordinates (period: TimeSpan) =
+        let count = int (period.TotalMilliseconds / 10.)
+        let random = Random()
+        
+        // Create a semi-random path with some coherence
+        let rec generatePath acc remainingPoints currentX currentY =
+            if remainingPoints <= 0 then
+                List.rev acc
+            else
+                // Add some randomness to movement
+                let maxStep = 0.5f
+                let deltaX = float32 (random.NextDouble() * float maxStep * 2.0 - float maxStep)
+                let deltaY = float32 (random.NextDouble() * float maxStep * 2.0 - float maxStep)
+                
+                // Sometimes make bigger jumps to simulate quick movements
+                let (nextX, nextY) =
+                    if random.NextDouble() < 0.2 then
+                        let direction = random.Next(4)
+                        match direction with
+                        | 0 -> (currentX + 1.0f, currentY)
+                        | 1 -> (currentX, currentY + 1.0f)
+                        | 2 -> (currentX - 1.0f, currentY)
+                        | _ -> (currentX, currentY - 1.0f)
+                    else
+                        (currentX + deltaX, currentY + deltaY)
+                        
+                // Ensure coordinates are positive or zero
+                let nextX = max 0.0f nextX
+                let nextY = max 0.0f nextY
+                
+                // Round to one decimal place for more natural looking coordinates
+                let roundedX = float32 (Math.Round(float nextX, 1))
+                let roundedY = float32 (Math.Round(float nextY, 1))
+                
+                generatePath ((roundedX, roundedY) :: acc) (remainingPoints - 1) roundedX roundedY
+        
+        // Start at origin and generate path
+        generatePath [] count 0.0f 0.0f
+    
+    let shuffle (period: TimeSpan) (page: Page) =
         try
             async {
-                do! page.Value.Mouse.MoveAsync(0.f, 0.f) |> Async.AwaitTask
+                let coordinates = getRandomCoordinates period
+                
+                do!
+                    coordinates
+                    |> Seq.map(fun (x,y) -> page.Value.Mouse.MoveAsync(x, y))
+                    |> Seq.map Async.AwaitTask
+                    |> Async.Sequential
+                    |> Async.Ignore
+                    
                 return page |> Ok
             }
         with ex ->
