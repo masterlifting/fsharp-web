@@ -21,14 +21,20 @@ let private create (uri: Uri) =
             let url = uri |> string
 
             match! page.GotoAsync url |> Async.AwaitTask with
-            | null -> return $"Browser initial page '%s{url}' not found" |> NotFound |> Error
+            | null ->
+                return
+                    Error
+                    <| Operation {
+                        Message = $"Failed to create client '%s{url}'. Client was not created."
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
             | response ->
                 match response.Status = 200 with
                 | false ->
                     return
                         Error
                         <| Operation {
-                            Message = $"Loading browser initial page '%s{url}' failed: '%s{response.StatusText}'"
+                            Message = $"Failed to create client '%s{url}': '%s{response.StatusText}'"
                             Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
                         }
                 | true -> return page |> Ok
