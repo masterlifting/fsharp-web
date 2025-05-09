@@ -147,5 +147,5 @@ let solveToInt ct (image: byte array) =
                     Host = "https://api.anti-captcha.com"
                     Headers = None
                 }
-                |> Http.Provider.init
+                |> Http.Client.init
                 |> ResultAsync.wrap (createTask key image ct))

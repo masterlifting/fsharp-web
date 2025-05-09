@@ -6,12 +6,11 @@ open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients.Domain.Browser
 
-let load (uri: Uri) (provider: Provider) =
+let load (uri: Uri) (client: Client) =
     try
         async {
             let url = uri |> string
-            let! page = provider.Value.NewPageAsync() |> Async.AwaitTask
-            match! page.GotoAsync url |> Async.AwaitTask with
+            match! client.GotoAsync url |> Async.AwaitTask with
             | null -> return $"Page '%s{url}' response not found" |> NotFound |> Error
             | response ->
                 match response.Status = 200 with
@@ -23,7 +22,7 @@ let load (uri: Uri) (provider: Provider) =
                         $"Page load failed: '%d{status}' '%s{statusText}' '%s{url}'"
                         |> NotSupported
                         |> Error
-                | true -> return page |> Page |> Ok
+                | true -> return Ok()
         }
     with ex ->
         Operation {
@@ -35,10 +34,10 @@ let load (uri: Uri) (provider: Provider) =
 
 module Html =
 
-    let tryFindText (selector: Selector) (page: Page) =
+    let tryFindText (selector: Selector) (client: Client) =
         try
             async {
-                let! text = page.Value.Locator(selector.Value).InnerTextAsync() |> Async.AwaitTask
+                let! text = client.Locator(selector.Value).InnerTextAsync() |> Async.AwaitTask
                 return
                     match text with
                     | AP.IsString v -> v |> Some |> Ok
@@ -52,11 +51,11 @@ module Html =
             |> Error
             |> async.Return
 
-    let execute (selector: Selector) (command: string) (page: Page) =
+    let execute (selector: Selector) (command: string) (client: Client) =
         try
             async {
-                let! _ = page.Value.EvalOnSelectorAsync(selector.Value, command) |> Async.AwaitTask
-                return page |> Ok
+                let! _ = client.EvalOnSelectorAsync(selector.Value, command) |> Async.AwaitTask
+                return Ok()
             }
         with ex ->
             Operation {
@@ -68,11 +67,11 @@ module Html =
 
 module Input =
 
-    let fill (selector: Selector) (value: string) (page: Page) =
+    let fill (selector: Selector) (value: string) (client: Client) =
         try
             async {
-                do! page.Value.FillAsync(selector.Value, value) |> Async.AwaitTask
-                return page |> Ok
+                do! client.FillAsync(selector.Value, value) |> Async.AwaitTask
+                return Ok()
             }
         with ex ->
             Operation {
@@ -84,11 +83,11 @@ module Input =
 
 module Button =
 
-    let click (selector: Selector) (page: Page) =
+    let click (selector: Selector) (client: Client) =
         try
             async {
-                do! page.Value.ClickAsync(selector.Value) |> Async.AwaitTask
-                return page |> Ok
+                do! client.ClickAsync(selector.Value) |> Async.AwaitTask
+                return Ok()
             }
         with ex ->
             Operation {
@@ -130,28 +129,28 @@ module Mouse =
                 let nextX = max 0.0f nextX
                 let nextY = max 0.0f nextY
 
-                // Round to one decimal place for more natural looking coordinates
+                // Round to one decimal place for more natural-looking coordinates
                 let roundedX = float32 (Math.Round(float nextX, 1))
                 let roundedY = float32 (Math.Round(float nextY, 1))
 
                 generatePath ((roundedX, roundedY) :: acc) (remainingPoints - 1) roundedX roundedY
 
-        // Start at origin and generate path
+        // Start at origin and generate a path
         generatePath [] count 0.0f 0.0f
 
-    let shuffle (period: TimeSpan) (page: Page) =
+    let shuffle (period: TimeSpan) (client: Client) =
         try
             async {
                 let coordinates = getRandomCoordinates period
 
                 do!
                     coordinates
-                    |> Seq.map (fun (x, y) -> page.Value.Mouse.MoveAsync(x, y))
+                    |> Seq.map (fun (x, y) -> client.Mouse.MoveAsync(x, y))
                     |> Seq.map Async.AwaitTask
                     |> Async.Sequential
                     |> Async.Ignore
 
-                return page |> Ok
+                return Ok()
             }
         with ex ->
             Operation {
