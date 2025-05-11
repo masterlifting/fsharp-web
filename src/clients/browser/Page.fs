@@ -2,6 +2,7 @@
 module Web.Clients.Browser.Page
 
 open System
+open System.Text.RegularExpressions
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients.Domain.Browser
@@ -32,27 +33,27 @@ let load (uri: Uri) (client: Client) =
                 |> Error
     }
 
-module Html =
+let private tryFindLocator (selector: Selector) (client: Client) =
+    async {
+        try
+            let locator = client.Locator(selector.Value)
+            let! count = locator.CountAsync() |> Async.AwaitTask
+            return
+                match count > 0 with
+                | true -> locator |> Some |> Ok
+                | false -> None |> Ok
+        with ex ->
+            return
+                Operation {
+                    Message = ex |> Exception.toMessage
+                    Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                }
+                |> Error
+    }
 
-    let tryFindLocator (selector: Selector) (client: Client) =
-        async {
-            try
-                let locator = client.Locator(selector.Value)
-                let! count = locator.CountAsync() |> Async.AwaitTask
-                return
-                    match count > 0 with
-                    | true -> locator |> Some |> Ok
-                    | false -> None |> Ok
-            with ex ->
-                return
-                    Operation {
-                        Message = ex |> Exception.toMessage
-                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
-                    }
-                    |> Error
-        }
+module Text =
 
-    let tryFindText (selector: Selector) (client: Client) =
+    let tryFind (selector: Selector) (client: Client) =
         async {
             try
                 match! client |> tryFindLocator selector with
@@ -73,54 +74,16 @@ module Html =
                     |> Error
         }
 
-    let execute (selector: Selector) (command: string) (client: Client) =
+module Input =
+
+    let fill (selector: Selector) (value: string) (client: Client) =
         async {
             try
                 match! client |> tryFindLocator selector with
                 | Error e -> return e |> Error
                 | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
-                    let! x = locator.EvaluateAsync(command) |> Async.AwaitTask
-                    return Ok()
-            with ex ->
-                return
-                    Operation {
-                        Message = ex |> Exception.toMessage
-                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
-                    }
-                    |> Error
-        }
-
-module Input =
-
-    let fill (selector: Selector) (value: string) (client: Client) =
-        async {
-            try
-                match! client |> Html.tryFindLocator selector with
-                | Error e -> return e |> Error
-                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
-                | Ok(Some locator) ->
                     do! locator.FillAsync(value) |> Async.AwaitTask
-                    return Ok()
-            with ex ->
-                return
-                    Operation {
-                        Message = ex |> Exception.toMessage
-                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
-                    }
-                    |> Error
-        }
-
-module Button =
-
-    let click (selector: Selector) (client: Client) =
-        async {
-            try
-                match! client |> Html.tryFindLocator selector with
-                | Error e -> return e |> Error
-                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
-                | Ok(Some locator) ->
-                    do! locator.ClickAsync() |> Async.AwaitTask
                     return Ok()
             with ex ->
                 return
@@ -172,6 +135,31 @@ module Mouse =
         // Start at origin and generate a path
         generatePath [] count 0.0f 0.0f
 
+    let click (selector: Selector) (urlPattern: Regex option) (client: Client) =
+        async {
+            try
+                match! client |> tryFindLocator selector with
+                | Error e -> return e |> Error
+                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
+                | Ok(Some locator) ->
+                    match urlPattern with
+                    | None ->
+                        do! locator.ClickAsync() |> Async.AwaitTask
+                        return Ok()
+                    | Some pattern ->
+                        do! locator.ClickAsync() |> Async.AwaitTask
+                        let! navigation = client.WaitForURLAsync(pattern) |> Async.AwaitTask |> Async.StartChild
+                        do! navigation |> Async.Ignore
+                        return Ok()
+            with ex ->
+                return
+                    Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
+                    |> Error
+        }
+
     let shuffle (period: TimeSpan) (client: Client) =
         async {
             try
@@ -185,6 +173,34 @@ module Mouse =
                     |> Async.Ignore
 
                 return Ok()
+            with ex ->
+                return
+                    Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
+                    |> Error
+        }
+
+module Form =
+
+    let submit (selector: Selector) (urlPattern: Regex) (client: Client) =
+        async {
+            try
+                match! client |> tryFindLocator selector with
+                | Error e -> return e |> Error
+                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
+                | Ok(Some locator) ->
+                    let! navigation = client.WaitForURLAsync(urlPattern) |> Async.AwaitTask |> Async.StartChild
+
+                    do!
+                        locator.EvaluateAsync("form => form.submit()")
+                        |> Async.AwaitTask
+                        |> Async.Ignore
+
+                    do! navigation |> Async.Ignore
+
+                    return Ok()
             with ex ->
                 return
                     Operation {
