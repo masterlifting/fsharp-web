@@ -148,6 +148,7 @@ module Mouse =
                         return Ok()
                     | Some pattern ->
                         do! locator.ClickAsync() |> Async.AwaitTask
+                        do! locator.WaitForAsync() |> Async.AwaitTask
                         let! navigation = client.WaitForURLAsync(pattern) |> Async.AwaitTask |> Async.StartChild
                         do! navigation |> Async.Ignore
                         return Ok()
