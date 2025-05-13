@@ -19,6 +19,7 @@ let private create () =
             let options =
                 BrowserTypeLaunchOptions(
                     Headless = true, // Can be true with the additional settings below
+                    SlowMo = 2000.f,
                     Args = [|
                         "--no-sandbox"
                         "--disable-setuid-sandbox"
