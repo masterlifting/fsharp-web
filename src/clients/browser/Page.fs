@@ -145,6 +145,7 @@ module Mouse =
                     match urlPattern with
                     | None ->
                         do! locator.ClickAsync() |> Async.AwaitTask
+                        do! locator.WaitForAsync() |> Async.AwaitTask
                         return Ok()
                     | Some pattern ->
                         do! locator.ClickAsync() |> Async.AwaitTask
