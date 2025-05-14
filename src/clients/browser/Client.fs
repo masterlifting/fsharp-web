@@ -64,7 +64,7 @@ let private create () =
     with ex ->
         Error
         <| Operation {
-            Message = ex |> Exception.toMessage
+            Message = "Failed to create browser client. " + (ex |> Exception.toMessage)
             Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
         }
         |> async.Return

@@ -33,6 +33,20 @@ let load (uri: Uri) (client: Client) =
                 |> Error
     }
 
+let close (client: Client) =
+    async {
+        try
+            do! client.CloseAsync() |> Async.AwaitTask
+            return Ok()
+        with ex ->
+            return
+                Operation {
+                    Message = ex |> Exception.toMessage
+                    Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                }
+                |> Error
+    }
+
 let private tryFindLocator (selector: Selector) (client: Client) =
     async {
         try
