@@ -5,13 +5,15 @@ open System
 open System.Text.RegularExpressions
 open Infrastructure.Domain
 open Infrastructure.Prelude
+open Microsoft.Playwright
 open Web.Clients.Domain.Browser
 
-let load (uri: Uri) (client: Client) =
+let load (uri: Uri) (browser: Client) =
     async {
         try
             let url = uri |> string
-            match! client.GotoAsync url |> Async.AwaitTask with
+            let! page = browser.NewPageAsync() |> Async.AwaitTask
+            match! page.GotoAsync url |> Async.AwaitTask with
             | null -> return $"Page '%s{url}' not found" |> NotFound |> Error
             | response ->
                 match response.Status = 200 with
@@ -23,7 +25,7 @@ let load (uri: Uri) (client: Client) =
                         $"Page load failed: '%d{status}' '%s{statusText}' '%s{url}'"
                         |> NotSupported
                         |> Error
-                | true -> return Ok()
+                | true -> return Ok page
         with ex ->
             return
                 Operation {
@@ -33,10 +35,10 @@ let load (uri: Uri) (client: Client) =
                 |> Error
     }
 
-let close (client: Client) =
+let close (page: Page) =
     async {
         try
-            do! client.CloseAsync() |> Async.AwaitTask
+            do! page.CloseAsync() |> Async.AwaitTask
             return Ok()
         with ex ->
             return
@@ -47,10 +49,10 @@ let close (client: Client) =
                 |> Error
     }
 
-let private tryFindLocator (selector: Selector) (client: Client) =
+let private tryFindLocator (selector: Selector) (page: Page) =
     async {
         try
-            let locator = client.Locator(selector.Value)
+            let locator = page.Locator(selector.Value)
             let! count = locator.CountAsync() |> Async.AwaitTask
             return
                 match count > 0 with
@@ -67,10 +69,10 @@ let private tryFindLocator (selector: Selector) (client: Client) =
 
 module Text =
 
-    let tryFind (selector: Selector) (client: Client) =
+    let tryFind (selector: Selector) (page: Page) =
         async {
             try
-                match! client |> tryFindLocator selector with
+                match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
                 | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
@@ -90,15 +92,15 @@ module Text =
 
 module Input =
 
-    let fill (selector: Selector) (value: string) (client: Client) =
+    let fill (selector: Selector) (value: string) (page: Page) =
         async {
             try
-                match! client |> tryFindLocator selector with
+                match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
                 | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
                     do! locator.FillAsync(value) |> Async.AwaitTask
-                    return Ok()
+                    return Ok page
             with ex ->
                 return
                     Operation {
@@ -149,10 +151,10 @@ module Mouse =
         // Start at origin and generate a path
         generatePath [] count 0.0f 0.0f
 
-    let click (selector: Selector) (urlPattern: Regex option) (client: Client) =
+    let click (selector: Selector) (urlPattern: Regex option) (page: Page) =
         async {
             try
-                match! client |> tryFindLocator selector with
+                match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
                 | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
@@ -160,13 +162,13 @@ module Mouse =
                     | None ->
                         do! locator.ClickAsync() |> Async.AwaitTask
                         do! locator.WaitForAsync() |> Async.AwaitTask
-                        return Ok()
+                        return Ok page
                     | Some pattern ->
                         do! locator.ClickAsync() |> Async.AwaitTask
                         do! locator.WaitForAsync() |> Async.AwaitTask
-                        let! navigation = client.WaitForURLAsync(pattern) |> Async.AwaitTask |> Async.StartChild
+                        let! navigation = page.WaitForURLAsync(pattern) |> Async.AwaitTask |> Async.StartChild
                         do! navigation |> Async.Ignore
-                        return Ok()
+                        return Ok page
             with ex ->
                 return
                     Operation {
@@ -176,19 +178,19 @@ module Mouse =
                     |> Error
         }
 
-    let shuffle (period: TimeSpan) (client: Client) =
+    let shuffle (period: TimeSpan) (page: Page) =
         async {
             try
                 let coordinates = getRandomCoordinates period
 
                 do!
                     coordinates
-                    |> Seq.map (fun (x, y) -> client.Mouse.MoveAsync(x, y))
+                    |> Seq.map (fun (x, y) -> page.Mouse.MoveAsync(x, y))
                     |> Seq.map Async.AwaitTask
                     |> Async.Sequential
                     |> Async.Ignore
 
-                return Ok()
+                return Ok page
             with ex ->
                 return
                     Operation {
@@ -200,14 +202,14 @@ module Mouse =
 
 module Form =
 
-    let submit (selector: Selector) (urlPattern: Regex) (client: Client) =
+    let submit (selector: Selector) (urlPattern: Regex) (page: Page) =
         async {
             try
-                match! client |> tryFindLocator selector with
+                match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
                 | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
-                    let! navigation = client.WaitForURLAsync(urlPattern) |> Async.AwaitTask |> Async.StartChild
+                    let! navigation = page.WaitForURLAsync(urlPattern) |> Async.AwaitTask |> Async.StartChild
 
                     do!
                         locator.EvaluateAsync("form => form.submit()")
@@ -216,7 +218,7 @@ module Form =
 
                     do! navigation |> Async.Ignore
 
-                    return Ok()
+                    return Ok page
             with ex ->
                 return
                     Operation {

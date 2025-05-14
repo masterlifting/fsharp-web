@@ -4,9 +4,10 @@ open System
 open System.Collections.Concurrent
 open Microsoft.Playwright
 
-type Client = IPage
+type Client = IBrowserContext
+type Page = IPage
 type ClientFactory = ConcurrentDictionary<string, Client>
-type Connection = { PageUri: Uri }
+type Connection = { Name: string }
 
 type Selector =
     | Selector of string

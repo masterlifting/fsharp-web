@@ -58,8 +58,8 @@ let private create () =
                 """
 
             do! context.AddInitScriptAsync(initScripts) |> Async.AwaitTask
-            let! page = context.NewPageAsync() |> Async.AwaitTask
-            return page |> Ok
+
+            return context |> Ok
         }
     with ex ->
         Error
@@ -70,10 +70,10 @@ let private create () =
         |> async.Return
 
 let init (connection: Connection) =
-    match clients.TryGetValue connection.PageUri.AbsoluteUri with
+    match clients.TryGetValue connection.Name with
     | true, client -> client |> Ok |> async.Return
     | _ ->
         create ()
         |> ResultAsync.map (fun client ->
-            clients.TryAdd(connection.PageUri.AbsoluteUri, client) |> ignore
+            clients.TryAdd(connection.Name, client) |> ignore
             client)
