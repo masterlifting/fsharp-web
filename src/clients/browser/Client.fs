@@ -6,7 +6,7 @@ open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients.Domain.Browser
 
-let private browsers = BrowserFactory()
+let private clients = ClientFactory()
 
 let private createBrowser browserType =
     try
@@ -90,11 +90,11 @@ let private createContext (browser: IBrowser) =
         |> async.Return
 
 let init (connection: Connection) =
-    match browsers.TryGetValue connection.Browser.Value with
-    | true, browser -> browser |> Ok |> async.Return
+    match clients.TryGetValue connection.Browser.Value with
+    | true, client -> client |> Ok |> async.Return
     | _ ->
         createBrowser connection.Browser
-        |> ResultAsync.map (fun browser ->
-            browsers.TryAdd(connection.Browser.Value, browser) |> ignore
-            browser)
+        |> ResultAsync.map (fun client ->
+            clients.TryAdd(connection.Browser.Value, client) |> ignore
+            client)
     |> ResultAsync.bindAsync createContext

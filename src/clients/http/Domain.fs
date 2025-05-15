@@ -4,7 +4,7 @@ open System
 open System.Collections.Concurrent
 
 type Client = Net.Http.HttpClient
-type ClientFactory = ConcurrentDictionary<string, Client>
+type internal ClientFactory = ConcurrentDictionary<string, Client>
 
 type Headers = Map<string, string list> option
 

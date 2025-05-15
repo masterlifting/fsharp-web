@@ -5,7 +5,7 @@ open Infrastructure.Domain
 open Telegram.Bot
 
 type Client = TelegramBotClient
-type ClientFactory = ConcurrentDictionary<string, Client>
+type internal ClientFactory = ConcurrentDictionary<string, Client>
 
 type ChatId =
     | ChatId of int64
