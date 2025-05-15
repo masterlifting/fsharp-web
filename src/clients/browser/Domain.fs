@@ -6,7 +6,7 @@ open Microsoft.Playwright
 
 type Client = IBrowserContext
 type Page = IPage
-type ClientFactory = ConcurrentDictionary<string, Client>
+type BrowserFactory = ConcurrentDictionary<string, IBrowser>
 
 type BrowserType =
     | Chromium

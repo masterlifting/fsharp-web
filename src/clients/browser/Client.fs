@@ -6,9 +6,9 @@ open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients.Domain.Browser
 
-let private clients = ClientFactory()
+let private browsers = BrowserFactory()
 
-let private create browserType =
+let private createBrowser browserType =
     try
         async {
             let! playwright = Playwright.CreateAsync() |> Async.AwaitTask
@@ -44,6 +44,22 @@ let private create browserType =
                 | Firefox -> playwright.Firefox.LaunchAsync(options)
                 |> Async.AwaitTask
 
+            return browser |> Ok
+        }
+    with ex ->
+        Error
+        <| Operation {
+            Message = "Failed to create browser. " + (ex |> Exception.toMessage)
+            Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+        }
+        |> async.Return
+
+let private createContext (browser: IBrowser) =
+    try
+        async {
+            let userAgent =
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+
             let contextOptions =
                 BrowserNewContextOptions(
                     ViewportSize = ViewportSize(Width = 1920, Height = 1080),
@@ -68,16 +84,17 @@ let private create browserType =
     with ex ->
         Error
         <| Operation {
-            Message = "Failed to create browser client. " + (ex |> Exception.toMessage)
+            Message = "Failed to create browser context. " + (ex |> Exception.toMessage)
             Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
         }
         |> async.Return
 
 let init (connection: Connection) =
-    match clients.TryGetValue connection.Browser.Value with
-    | true, client -> client |> Ok |> async.Return
+    match browsers.TryGetValue connection.Browser.Value with
+    | true, browser -> browser |> Ok |> async.Return
     | _ ->
-        create connection.Browser
-        |> ResultAsync.map (fun client ->
-            clients.TryAdd(connection.Browser.Value, client) |> ignore
-            client)
+        createBrowser connection.Browser
+        |> ResultAsync.map (fun browser ->
+            browsers.TryAdd(connection.Browser.Value, browser) |> ignore
+            browser)
+    |> ResultAsync.bindAsync createContext
