@@ -7,7 +7,17 @@ open Microsoft.Playwright
 type Client = IBrowserContext
 type Page = IPage
 type ClientFactory = ConcurrentDictionary<string, Client>
-type Connection = { Name: string }
+
+type BrowserType =
+    | Chromium
+    | Firefox
+
+    member this.Value =
+        match this with
+        | Chromium -> "chromium"
+        | Firefox -> "firefox"
+
+type Connection = { Browser: BrowserType }
 
 type Selector =
     | Selector of string

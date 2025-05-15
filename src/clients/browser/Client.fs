@@ -8,7 +8,7 @@ open Web.Clients.Domain.Browser
 
 let private clients = ClientFactory()
 
-let private create () =
+let private create browserType =
     try
         async {
             let! playwright = Playwright.CreateAsync() |> Async.AwaitTask
@@ -38,7 +38,11 @@ let private create () =
                     |]
                 )
 
-            let! browser = playwright.Chromium.LaunchAsync(options) |> Async.AwaitTask
+            let! browser =
+                match browserType with
+                | Chromium -> playwright.Chromium.LaunchAsync(options)
+                | Firefox -> playwright.Firefox.LaunchAsync(options)
+                |> Async.AwaitTask
 
             let contextOptions =
                 BrowserNewContextOptions(
@@ -70,10 +74,10 @@ let private create () =
         |> async.Return
 
 let init (connection: Connection) =
-    match clients.TryGetValue connection.Name with
+    match clients.TryGetValue connection.Browser.Value with
     | true, client -> client |> Ok |> async.Return
     | _ ->
-        create ()
+        create connection.Browser
         |> ResultAsync.map (fun client ->
-            clients.TryAdd(connection.Name, client) |> ignore
+            clients.TryAdd(connection.Browser.Value, client) |> ignore
             client)

@@ -5,7 +5,6 @@ open System
 open System.Text.RegularExpressions
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Microsoft.Playwright
 open Web.Clients.Domain.Browser
 
 let load (uri: Uri) (browser: Client) =
