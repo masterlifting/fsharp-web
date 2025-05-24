@@ -13,34 +13,34 @@ let private createOffset updateIds =
 
 let private handleTasks bot (tasks: Async<Result<unit, Error'>> array) =
     async {
-        $"{bot} start handling messages: {tasks.Length}" |> Log.trc
+        $"{bot}Start handling messages: {tasks.Length}" |> Log.trc
         let! results = tasks |> Async.Sequential
-        $"{bot} finish handling messages: {results.Length}" |> Log.trc
+        $"{bot}Finish handling messages: {results.Length}" |> Log.trc
 
         results
         |> Result.unzip
         |> snd
-        |> Seq.iter (fun error -> bot + " got the error: " + error.Message |> Log.crt)
+        |> Seq.iter (fun error -> bot + error.Message |> Log.crt)
     }
 
 let start handler ct =
     fun (client: Client) ->
-        let bot = $"Telegram bot '{client.BotId}'"
+        let bot = $"Telegram bot '{client.BotId}'. "
         let limitMsg = 10
         let restartAttempts = 50
         let timeoutSec = 60
         let defaultInt = Nullable<int>()
 
-        $"{bot} has started." |> Log.inf
+        $"{bot}Started." |> Log.inf
 
         let rec innerLoop (offset: Nullable<int>) attempts =
             async {
                 if ct |> canceled then
-                    return $"{bot} loop canceled." |> Canceled |> Error
+                    return $"{bot}Canceled." |> Canceled |> Error
                 else
 
                     if attempts <> restartAttempts then
-                        $"{bot} has restarted." |> Log.inf
+                        $"{bot}Restarted." |> Log.inf
 
                     try
                         let! updates = client.GetUpdates(offset, limitMsg, timeoutSec, null, ct) |> Async.AwaitTask
@@ -66,13 +66,13 @@ let start handler ct =
                         if attempts > 0 then
                             let interval = 10000.0 * Math.Pow(1.2, float (restartAttempts - attempts)) |> int
                             do! Async.Sleep interval
-                            $"{bot} is restarting... %s{error}" |> Log.crt
+                            $"{bot}Restarting due to: %s{error}" |> Log.crt
                             return! innerLoop offset (attempts - 1)
                         else
                             return
                                 Error
                                 <| Operation {
-                                    Message = bot + " got the error. " + error
+                                    Message = bot + error
                                     Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
                                 }
             }
