@@ -118,7 +118,7 @@ module Producer =
         Callback: ButtonCallback
     } with
 
-        static member create name callback = { Name = name; Callback = callback }
+        static member internal create name callback = { Name = name; Callback = callback }
 
     type ButtonsGroup = {
         Name: string

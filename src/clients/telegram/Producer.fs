@@ -38,6 +38,11 @@ module ButtonsGroup =
             }
             |> ButtonsGroup
 
+    let createButtons (buttons: (string * string) seq) =
+        buttons
+        |> Seq.map (fun (name, value) -> Button.create name (CallbackData value))
+        |> Set.ofSeq
+
 module private Produce =
     let private send text (markup: #IReplyMarkup option) =
         fun (chatId: ChatId) (messageId: MessageId) ct (client: Client) ->
