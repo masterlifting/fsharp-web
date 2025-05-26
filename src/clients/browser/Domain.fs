@@ -29,6 +29,6 @@ type Selector =
 module Mouse =
 
     type WaitFor =
-        | UrlRegexPattern of string
-        | Popup of Selector
+        | Url of string
+        | Selector of Selector
         | Nothing

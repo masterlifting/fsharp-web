@@ -54,6 +54,21 @@ let private createBrowser browserType =
         }
         |> async.Return
 
+let private cleanBrowser (browser: IBrowser) =
+    async {
+        try
+            do! browser.CloseAsync() |> Async.AwaitTask
+            do! browser.DisposeAsync().AsTask() |> Async.AwaitTask
+            return Ok()
+        with ex ->
+            return
+                Operation {
+                    Message = "Failed to close browser. " + (ex |> Exception.toMessage)
+                    Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                }
+                |> Error
+    }
+
 let private createContext (browser: IBrowser) =
     try
         async {
@@ -91,7 +106,19 @@ let private createContext (browser: IBrowser) =
 
 let init (connection: Connection) =
     match clients.TryGetValue connection.Browser.Value with
-    | true, client -> client |> Ok |> async.Return
+    | true, client ->
+        match client.Contexts.Count = 0 with
+        | true ->
+
+            clients.TryRemove connection.Browser.Value |> ignore
+
+            cleanBrowser client
+            |> ResultAsync.bindAsync (fun _ ->
+                createBrowser connection.Browser
+                |> ResultAsync.map (fun client ->
+                    clients.TryAdd(connection.Browser.Value, client) |> ignore
+                    client))
+        | false -> client |> Ok |> async.Return
     | _ ->
         createBrowser connection.Browser
         |> ResultAsync.map (fun client ->

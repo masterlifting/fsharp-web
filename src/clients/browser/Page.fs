@@ -5,6 +5,7 @@ open System
 open System.Text.RegularExpressions
 open Infrastructure.Domain
 open Infrastructure.Prelude
+open Microsoft.Playwright
 open Web.Clients.Domain.Browser
 
 let load (uri: Uri) (browser: Client) =
@@ -37,7 +38,8 @@ let load (uri: Uri) (browser: Client) =
 let close (page: Page) =
     async {
         try
-            do! page.CloseAsync() |> Async.AwaitTask
+            do! page.CloseAsync(PageCloseOptions(RunBeforeUnload = false)) |> Async.AwaitTask
+            do! page.Context.CloseAsync() |> Async.AwaitTask
             return Ok()
         with ex ->
             return
@@ -52,7 +54,6 @@ let private tryFindLocator (selector: Selector) (page: Page) =
     async {
         try
             let locator = page.Locator(selector.Value)
-            do! locator.WaitForAsync() |> Async.AwaitTask |> Async.Ignore
             let! count = locator.CountAsync() |> Async.AwaitTask
             return
                 match count > 0 with
@@ -161,19 +162,15 @@ module Mouse =
                     do! locator.ClickAsync() |> Async.AwaitTask
 
                     match awaiter with
-                    | Mouse.UrlRegexPattern pattern ->
+                    | Mouse.Url pattern ->
                         let! navigation = page.WaitForURLAsync(Regex(pattern)) |> Async.AwaitTask |> Async.StartChild
                         do! navigation |> Async.Ignore
                         return Ok page
-                    | Mouse.Popup selector ->
-                        let! popup = page.WaitForPopupAsync() |> Async.AwaitTask
-                        let! elementHandle =
-                            popup.WaitForSelectorAsync(selector.Value)
-                            |> Async.AwaitTask
-                            |> Async.StartChild
-                        match! elementHandle with
-                        | null -> return $"Popup with selector '{selector.Value}' not found" |> NotFound |> Error
-                        | _ -> return Ok page
+                    | Mouse.Selector selector ->
+                        match! page |> tryFindLocator selector with
+                        | Error e -> return e |> Error
+                        | Ok None -> return $"Mouse selector '{selector.Value}' not found" |> NotFound |> Error
+                        | Ok(Some _) -> return Ok page
                     | Mouse.Nothing -> return Ok page
             with ex ->
                 return
