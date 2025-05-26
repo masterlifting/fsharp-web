@@ -51,21 +51,28 @@ let close (page: Page) =
     }
 
 let private tryFindLocator (selector: Selector) (page: Page) =
-    async {
-        try
-            let locator = page.Locator(selector.Value)
-            let! count = locator.CountAsync() |> Async.AwaitTask
-            return
-                match count > 0 with
-                | true -> locator |> Some |> Ok
-                | false -> None |> Ok
-        with ex ->
-            return
-                Operation {
-                    Message = ex |> Exception.toMessage
-                    Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
-                }
-                |> Error
+    let perform () =
+        async {
+            try
+                let locator = page.Locator selector.Value
+                let! count = locator.CountAsync() |> Async.AwaitTask
+                return
+                    match count > 0 with
+                    | true -> locator |> Some |> Ok
+                    | false -> None |> Ok
+            with ex ->
+                return
+                    Operation {
+                        Message = ex |> Exception.toMessage
+                        Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
+                    }
+                    |> Error
+        }
+
+    Async.retry {
+        Delay = 100
+        Attempts = 2u<attempts>
+        Perform = perform
     }
 
 module Text =
@@ -100,7 +107,7 @@ module Input =
                 | Error e -> return e |> Error
                 | Ok None -> return $"Input selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
-                    do! locator.FillAsync(value) |> Async.AwaitTask
+                    do! locator.FillAsync value |> Async.AwaitTask
                     return Ok page
             with ex ->
                 return
@@ -132,12 +139,12 @@ module Mouse =
                     if random.NextDouble() < 0.2 then
                         let direction = random.Next(4)
                         match direction with
-                        | 0 -> (currentX + 1.0f, currentY)
-                        | 1 -> (currentX, currentY + 1.0f)
-                        | 2 -> (currentX - 1.0f, currentY)
-                        | _ -> (currentX, currentY - 1.0f)
+                        | 0 -> currentX + 1.0f, currentY
+                        | 1 -> currentX, currentY + 1.0f
+                        | 2 -> currentX - 1.0f, currentY
+                        | _ -> currentX, currentY - 1.0f
                     else
-                        (currentX + deltaX, currentY + deltaY)
+                        currentX + deltaX, currentY + deltaY
 
                 // Ensure coordinates are positive or zero
                 let nextX = max 0.0f nextX
@@ -163,7 +170,7 @@ module Mouse =
 
                     match awaiter with
                     | Mouse.Url pattern ->
-                        let! navigation = page.WaitForURLAsync(Regex(pattern)) |> Async.AwaitTask |> Async.StartChild
+                        let! navigation = page.WaitForURLAsync(Regex pattern) |> Async.AwaitTask |> Async.StartChild
                         do! navigation |> Async.Ignore
                         return Ok page
                     | Mouse.Selector selector ->
@@ -212,12 +219,9 @@ module Form =
                 | Error e -> return e |> Error
                 | Ok None -> return $"Form selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
-                    let! navigation = page.WaitForURLAsync(urlPattern) |> Async.AwaitTask |> Async.StartChild
+                    let! navigation = page.WaitForURLAsync urlPattern |> Async.AwaitTask |> Async.StartChild
 
-                    do!
-                        locator.EvaluateAsync("form => form.submit()")
-                        |> Async.AwaitTask
-                        |> Async.Ignore
+                    do! locator.EvaluateAsync "form => form.submit()" |> Async.AwaitTask |> Async.Ignore
 
                     do! navigation |> Async.Ignore
 
