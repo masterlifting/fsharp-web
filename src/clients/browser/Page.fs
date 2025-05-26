@@ -5,6 +5,7 @@ open System
 open System.Text.RegularExpressions
 open Infrastructure.Domain
 open Infrastructure.Prelude
+open Infrastructure.Logging
 open Microsoft.Playwright
 open Web.Clients.Domain.Browser
 
@@ -61,17 +62,20 @@ let private tryFindLocator (selector: Selector) (page: Page) =
                     | true -> locator |> Some |> Ok
                     | false -> None |> Ok
             with ex ->
-                return
+                let error =
                     Operation {
-                        Message = ex |> Exception.toMessage
+                        Message = "Failed to find locator. " + (ex |> Exception.toMessage)
                         Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
                     }
-                    |> Error
+
+                Log.crt error.Message
+
+                return error |> Error
         }
 
     Async.retry {
-        Delay = 100
-        Attempts = 2u<attempts>
+        Delay = 1000
+        Attempts = 3u<attempts>
         Perform = perform
     }
 

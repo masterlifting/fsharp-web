@@ -3,13 +3,22 @@
 open System.Net.Http
 open Infrastructure.Domain
 open Infrastructure.Prelude
+open Infrastructure.Logging
 open Web.Clients.Domain.Http
 
 let private update (key: string) (values: string seq) (client: Client) =
     try
         let values = values |> Seq.distinct
         client.DefaultRequestHeaders.Remove key |> ignore
-        client.DefaultRequestHeaders.Add(key, values) |> Ok
+        client.DefaultRequestHeaders.Add(key, values) |> ignore
+        let headers = client.DefaultRequestHeaders.GetValues key |> Seq.toList
+        let headerValues =
+            match headers with
+            | [] -> "No values"
+            | _ -> headers |> String.concat ", "
+
+        Log.wrn $"Http header '{key}' has size {headers.Length} and values: {headerValues}"
+        Ok()
     with ex ->
         Error
         <| Operation {
@@ -30,7 +39,7 @@ let set (headers: Headers) (client: Client) =
                     | values -> x.Value |> Seq.append values |> Seq.toList
                 | _ -> x.Value
 
-            (x.Key, values))
+            x.Key, values)
         |> Seq.map (fun (key, values) -> client |> update key values)
         |> Result.choose
         |> Result.map (fun _ -> client)
