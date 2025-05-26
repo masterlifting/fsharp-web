@@ -31,7 +31,7 @@ let start handler ct =
         let timeoutSec = 60
         let defaultInt = Nullable<int>()
 
-        $"{bot}Started." |> Log.inf
+        $"{bot}Started." |> Log.scs
 
         let rec innerLoop (offset: Nullable<int>) attempts =
             async {
@@ -40,7 +40,7 @@ let start handler ct =
                 else
 
                     if attempts <> restartAttempts then
-                        $"{bot}Restarted." |> Log.inf
+                        $"{bot}Restarted." |> Log.scs
 
                     try
                         let! updates = client.GetUpdates(offset, limitMsg, timeoutSec, null, ct) |> Async.AwaitTask
@@ -66,7 +66,7 @@ let start handler ct =
                         if attempts > 0 then
                             let interval = 10000.0 * Math.Pow(1.2, float (restartAttempts - attempts)) |> int
                             do! Async.Sleep interval
-                            $"{bot}Restarting due to: %s{error}" |> Log.crt
+                            $"{bot}Restarting due to: %s{error}" |> Log.wrn
                             return! innerLoop offset (attempts - 1)
                         else
                             return
