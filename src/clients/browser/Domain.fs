@@ -25,3 +25,10 @@ type Selector =
     member this.Value =
         match this with
         | Selector selector -> selector
+
+module Mouse =
+
+    type WaitFor =
+        | UrlRegexPattern of string
+        | Popup of Selector
+        | Nothing

@@ -18,7 +18,7 @@ let private createBrowser browserType =
 
             let options =
                 BrowserTypeLaunchOptions(
-                    Headless = true, // Can be true with the additional settings below
+                    Headless = false, // Can be true with the additional settings below
                     SlowMo = 2000.f,
                     Args = [|
                         "--no-sandbox"

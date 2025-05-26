@@ -52,6 +52,7 @@ let private tryFindLocator (selector: Selector) (page: Page) =
     async {
         try
             let locator = page.Locator(selector.Value)
+            do! locator.WaitForAsync() |> Async.AwaitTask |> Async.Ignore
             let! count = locator.CountAsync() |> Async.AwaitTask
             return
                 match count > 0 with
@@ -73,7 +74,7 @@ module Text =
             try
                 match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
-                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
+                | Ok None -> return $"Text selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
                     let! text = locator.InnerTextAsync() |> Async.AwaitTask
                     return
@@ -96,7 +97,7 @@ module Input =
             try
                 match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
-                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
+                | Ok None -> return $"Input selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
                     do! locator.FillAsync(value) |> Async.AwaitTask
                     return Ok page
@@ -150,24 +151,30 @@ module Mouse =
         // Start at origin and generate a path
         generatePath [] count 0.0f 0.0f
 
-    let click (selector: Selector) (urlPattern: Regex option) (page: Page) =
+    let click (selector: Selector) (awaiter: Mouse.WaitFor) (page: Page) =
         async {
             try
                 match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
-                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
+                | Ok None -> return $"Mouse selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
-                    match urlPattern with
-                    | None ->
-                        do! locator.ClickAsync() |> Async.AwaitTask
-                        do! locator.WaitForAsync() |> Async.AwaitTask
-                        return Ok page
-                    | Some pattern ->
-                        do! locator.ClickAsync() |> Async.AwaitTask
-                        do! locator.WaitForAsync() |> Async.AwaitTask
-                        let! navigation = page.WaitForURLAsync(pattern) |> Async.AwaitTask |> Async.StartChild
+                    do! locator.ClickAsync() |> Async.AwaitTask
+
+                    match awaiter with
+                    | Mouse.UrlRegexPattern pattern ->
+                        let! navigation = page.WaitForURLAsync(Regex(pattern)) |> Async.AwaitTask |> Async.StartChild
                         do! navigation |> Async.Ignore
                         return Ok page
+                    | Mouse.Popup selector ->
+                        let! popup = page.WaitForPopupAsync() |> Async.AwaitTask
+                        let! elementHandle =
+                            popup.WaitForSelectorAsync(selector.Value)
+                            |> Async.AwaitTask
+                            |> Async.StartChild
+                        match! elementHandle with
+                        | null -> return $"Popup with selector '{selector.Value}' not found" |> NotFound |> Error
+                        | _ -> return Ok page
+                    | Mouse.Nothing -> return Ok page
             with ex ->
                 return
                     Operation {
@@ -206,7 +213,7 @@ module Form =
             try
                 match! page |> tryFindLocator selector with
                 | Error e -> return e |> Error
-                | Ok None -> return $"Selector '{selector.Value}' not found" |> NotFound |> Error
+                | Ok None -> return $"Form selector '{selector.Value}' not found" |> NotFound |> Error
                 | Ok(Some locator) ->
                     let! navigation = page.WaitForURLAsync(urlPattern) |> Async.AwaitTask |> Async.StartChild
 
