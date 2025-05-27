@@ -6,19 +6,33 @@ open Infrastructure.Prelude
 open Infrastructure.Logging
 open Web.Clients.Domain.Http
 
+let private printHeaderValues (key: string) (values: string seq) =
+    match values |> Seq.isEmpty with
+    | true -> "No values"
+    | false -> values |> String.concat ", "
+    |> fun values -> $"Http header '{key}' has size {Seq.length values} and values: {values}"
+
 let private update (key: string) (values: string seq) (client: Client) =
     try
-        let values = values |> Seq.distinct
-        client.DefaultRequestHeaders.Remove key |> ignore
-        client.DefaultRequestHeaders.Add(key, values) |> ignore
-        let headers = client.DefaultRequestHeaders.GetValues key |> Seq.toList
-        let headerValues =
-            match headers with
-            | [] -> "No values"
-            | _ -> headers |> String.concat ", "
 
-        Log.wrn $"Http header '{key}' has size {headers.Length} and values: {headerValues}"
-        Ok()
+        printHeaderValues key values |> fun info -> Log.wrn $"Before updating: {info}"
+
+        let values =
+            values
+            |> Seq.map (fun x ->
+                match x.Split '=' with
+                | parts when parts.Length = 2 -> parts[0], Some parts[1]
+                | _ -> x, None)
+            |> Seq.distinctBy fst
+            |> Seq.map (fun (name, value) ->
+                match value with
+                | Some v -> $"{name}={v}"
+                | None -> name)
+
+        printHeaderValues key values |> fun info -> Log.wrn $"After updating: {info}"
+
+        client.DefaultRequestHeaders.Remove key |> ignore
+        client.DefaultRequestHeaders.Add(key, values) |> Ok
     with ex ->
         Error
         <| Operation {
@@ -36,7 +50,7 @@ let set (headers: Headers) (client: Client) =
                 | true, existingValues ->
                     match existingValues with
                     | null -> x.Value
-                    | values -> x.Value |> Seq.append values |> Seq.toList
+                    | values -> Seq.append x.Value values |> Seq.toList
                 | _ -> x.Value
 
             x.Key, values)
