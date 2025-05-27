@@ -68,7 +68,7 @@ let private tryFindLocator (selector: Selector) (page: Page) =
                         Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
                     }
 
-                Log.crt error.Message
+                Log.crt <| $"Attempt of tryFindLocator for {selector.Value} Error: " + error.Message
 
                 return error |> Error
         }
