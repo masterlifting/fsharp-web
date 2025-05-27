@@ -67,7 +67,7 @@ let private tryFindLocator (selector: Selector) (page: Page) =
                         Message = "Failed to find locator. " + (ex |> Exception.toMessage)
                         Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
                     }
-
+                //TODO: Remove this log when the issue is fixed
                 Log.crt <| $"Attempt of tryFindLocator for {selector.Value} Error: " + error.Message
 
                 return error |> Error
