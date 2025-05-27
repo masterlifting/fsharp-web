@@ -3,19 +3,10 @@
 open System.Net.Http
 open Infrastructure.Domain
 open Infrastructure.Prelude
-open Infrastructure.Logging
 open Web.Clients.Domain.Http
-
-let private printHeaderValues (key: string) (values: string seq) =
-    match values |> Seq.isEmpty with
-    | true -> "No values"
-    | false -> values |> String.concat ", "
-    |> fun values -> $"Http header '{key}' has size {Seq.length values} and values: {values}"
 
 let private update (key: string) (values: string seq) (client: Client) =
     try
-
-        printHeaderValues key values |> fun info -> Log.wrn $"Before updating: {info}"
 
         let values =
             values
@@ -28,8 +19,6 @@ let private update (key: string) (values: string seq) (client: Client) =
                 match value with
                 | Some v -> $"{name}={v}"
                 | None -> name)
-
-        printHeaderValues key values |> fun info -> Log.wrn $"After updating: {info}"
 
         client.DefaultRequestHeaders.Remove key |> ignore
         client.DefaultRequestHeaders.Add(key, values) |> Ok
