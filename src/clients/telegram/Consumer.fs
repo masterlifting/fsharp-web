@@ -23,8 +23,8 @@ let private handleTasks bot (tasks: Async<Result<unit, Error'>> array) =
         |> Seq.iter (fun error -> bot + error.Message |> Log.crt)
     }
 
-let start handler ct =
-    fun (client: Client) ->
+let start ct =
+    fun (client: Client, processUpdate) ->
         let bot = $"Telegram bot '{client.BotId}'. "
         let limitMsg = 10
         let restartAttempts = 50
@@ -51,7 +51,7 @@ let start handler ct =
                             | false ->
                                 updates
                                 |> Array.map (fun update ->
-                                    let task = update.ToDomain() |> ResultAsync.wrap handler
+                                    let task = update.ToDomain() |> ResultAsync.wrap processUpdate
                                     update.Id, task)
                                 |> Array.unzip
                                 |> fun (ids, tasks) -> createOffset ids, tasks

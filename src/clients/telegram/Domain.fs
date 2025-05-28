@@ -73,8 +73,6 @@ module Consumer =
         | ChatMember of Payload<string>
         | Unknown of Payload<string>
 
-    type Handler = Client * (Data -> Async<Result<unit, Error'>>)
-
 module Producer =
 
     open System
