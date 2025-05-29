@@ -4,9 +4,12 @@ open System
 open System.Collections.Concurrent
 open Microsoft.Playwright
 
-type Client = IBrowserContext
+type Client = {
+    Browser: IBrowser
+    Context: IBrowserContext
+}
 type Page = IPage
-type internal ClientFactory = ConcurrentDictionary<string, IBrowser>
+type internal ClientFactory = ConcurrentDictionary<string, Client>
 
 type BrowserType =
     | Chromium

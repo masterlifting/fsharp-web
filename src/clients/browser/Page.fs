@@ -9,11 +9,11 @@ open Infrastructure.Logging
 open Microsoft.Playwright
 open Web.Clients.Domain.Browser
 
-let load (uri: Uri) (browser: Client) =
+let load (uri: Uri) (client: Client) =
     async {
         try
             let url = uri |> string
-            let! page = browser.NewPageAsync() |> Async.AwaitTask
+            let! page = client.Browser.NewPageAsync() |> Async.AwaitTask
             match! page.GotoAsync url |> Async.AwaitTask with
             | null -> return $"Page '%s{url}' not found" |> NotFound |> Error
             | response ->
