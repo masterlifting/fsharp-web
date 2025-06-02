@@ -17,143 +17,76 @@ let ERROR_CODE = "CaptchaErrorCode"
 [<Struct>]
 type Task = { TaskId: uint64 }
 
-type Solution = { Text: string }
+let private createTask data ct =
+    fun httpClient ->
+        let request = { Path = "/createTask"; Headers = None }
 
-type TaskResult = {
-    Status: string
-    Solution: Solution
-    ErrorDescription: string option
-}
+        let content =
+            String {|
+                Data = data
+                Encoding = Text.Encoding.UTF8
+                ContentType = "application/json"
+            |}
 
-let private createTaskResultRequest key task =
-    let data =
-        $@"
+        httpClient
+        |> Http.Request.post request content ct
+        |> Http.Response.String.readContent ct
+        |> Http.Response.String.fromJson<Task>
+
+let private getTaskResult<'i, 'o> key task ct =
+    fun (httpClient, handleResult: 'i -> Result<'o option, Error'>) ->
+        let data =
+            $"""
             {{
-                ""clientKey"":""{key}"",
-                ""taskId"":""{task.TaskId}""
-            }}"
+                "clientKey":"%s{key}",
+                "taskId":"%i{task.TaskId}"
+            }}
+            """
 
-    let request = {
-        Path = "/getTaskResult"
-        Headers = None
-    }
+        let request = {
+            Path = "/getTaskResult"
+            Headers = None
+        }
 
-    let content =
-        String {|
-            Data = data
-            Encoding = Text.Encoding.UTF8
-            ContentType = "application/json"
-        |}
+        let content =
+            String {|
+                Data = data
+                Encoding = Text.Encoding.UTF8
+                ContentType = "application/json"
+            |}
 
-    request, content
-
-let private createCreateTaskRequest key image =
-    let data =
-        $@"
-            {{
-                ""clientKey"": ""{key}"",
-                ""task"": {{
-                    ""type"": ""ImageToTextTask"",
-                    ""body"": ""{image |> Convert.ToBase64String}"",
-                    ""phrase"": false,
-                    ""case"": false,
-                    ""numeric"": 0,
-                    ""math"": 0,
-                    ""minLength"": 0,
-                    ""maxLength"": 0
-                }}
-            }}"
-
-    let request = { Path = "/createTask"; Headers = None }
-
-    let content =
-        String {|
-            Data = data
-            Encoding = Text.Encoding.UTF8
-            ContentType = "application/json"
-        |}
-
-    request, content
-
-let private handleTaskResult tryAgain attempts result =
-    async {
-        match result.ErrorDescription, result.Status with
-        | Some error, _ ->
-            return
+        let rec innerLoop attempts =
+            match attempts with
+            | 0 ->
                 Error
                 <| Operation {
-                    Message = $"Captcha API has received the error '{error}'."
+                    Message = "No attempts left for the Captcha API task."
                     Code = ERROR_CODE |> Custom |> Some
                 }
-        | None, "ready" ->
-            return
-                match result.Solution.Text with
-                | AP.IsInt result -> Ok result
-                | _ ->
-                    Error
-                    <| Operation {
-                        Message = $"Captcha API says that '{result.Solution.Text}' is not an integer."
-                        Code = ERROR_CODE |> Custom |> Some
-                    }
-        | _ ->
-            do! Async.Sleep 500
-            return! tryAgain attempts
-    }
+                |> async.Return
+            | _ ->
+                if ct |> canceled then
+                    innerLoop 0
+                else
+                    httpClient
+                    |> Http.Request.post request content ct
+                    |> Http.Response.String.readContent ct
+                    |> Http.Response.String.fromJson<'a>
+                    |> ResultAsync.bind handleResult
+                    |> ResultAsync.bindAsync (function
+                        | Some result -> result |> Ok |> async.Return
+                        | None ->
+                            async {
+                                do! Async.Sleep 500
+                                return! innerLoop (attempts - 1)
+                            })
 
-let private getTaskResult ct key httpClient task =
+        innerLoop 5
 
-    let request, content = createTaskResultRequest key task
-
-    let rec innerLoop attempts =
-        match attempts with
-        | 0 ->
-            Error
-            <| Operation {
-                Message = "No attempts left for the Captcha API task."
-                Code = ERROR_CODE |> Custom |> Some
-            }
-            |> async.Return
-        | _ ->
-            if ct |> canceled then
-                innerLoop 0
-            else
-                httpClient
-                |> Http.Request.post request content ct
-                |> Http.Response.String.readContent ct
-                |> Http.Response.String.fromJson<TaskResult>
-                |> ResultAsync.bindAsync (handleTaskResult innerLoop (attempts - 1))
-
-    innerLoop 5
-
-let private createTask key image ct httpClient =
-    let request, content = createCreateTaskRequest key image
-
-    httpClient
-    |> Http.Request.post request content ct
-    |> Http.Response.String.readContent ct
-    |> Http.Response.String.fromJson<Task>
-    |> ResultAsync.bindAsync (getTaskResult ct key httpClient)
-
-let private init ct =
+let private init =
     fun createTask ->
         Configuration.Client.tryGetEnv ANTI_CAPTCHA_API_KEY None
-        |> Result.bind (function
-            | None -> ANTI_CAPTCHA_API_KEY |> NotFound |> Error
-            | Some key ->
-                {
-                    BaseUrl = "https://api.anti-captcha.com"
-                    Headers = None
-                }
-                |> Http.Client.init
-                |> Result.map (createTask key ct))
-
-let solveToInt ct (image: byte array) =
-    match image.Length with
-    | 0 -> "Image to solve for Captcha API" |> NotFound |> Error |> async.Return
-    | _ ->
-        Configuration.Client.tryGetEnv ANTI_CAPTCHA_API_KEY None
-        |> ResultAsync.wrap (fun keyOpt ->
-            match keyOpt with
+        |> ResultAsync.wrap (function
             | None -> ANTI_CAPTCHA_API_KEY |> NotFound |> Error |> async.Return
             | Some key ->
                 {
@@ -161,40 +94,34 @@ let solveToInt ct (image: byte array) =
                     Headers = None
                 }
                 |> Http.Client.init
-                |> ResultAsync.wrap (createTask key image ct))
+                |> ResultAsync.wrap (createTask key))
 
 module Number =
-    let private createTask key image ct =
-        fun httpClient ->
-            let data =
-                $@"
-                {{
-                    ""clientKey"": ""{key}"",
-                    ""task"": {{
-                        ""type"": ""ImageToTextTask"",
-                        ""body"": ""{image |> Convert.ToBase64String}"",
-                        ""phrase"": false,
-                        ""case"": false,
-                        ""numeric"": 0,
-                        ""math"": 0,
-                        ""minLength"": 0,
-                        ""maxLength"": 0
-                    }}
-                }}"
 
-            let request = { Path = "/createTask"; Headers = None }
+    type Solution = { Text: string }
 
-            let content =
-                String {|
-                    Data = data
-                    Encoding = Text.Encoding.UTF8
-                    ContentType = "application/json"
-                |}
+    type TaskResult = {
+        Status: string
+        Solution: Solution
+        ErrorDescription: string option
+    }
 
-            httpClient
-            |> Http.Request.post request content ct
-            |> Http.Response.String.readContent ct
-            |> Http.Response.String.fromJson<Task>
+    let private createTaskModel key image =
+        $"""
+        {{
+            "clientKey": "%s{key}",
+            "task": {{
+                "type": "ImageToTextTask",
+                "body": "%s{image |> Convert.ToBase64String}",
+                "phrase": false,
+                "case": false,
+                "numeric": 0,
+                "math": 0,
+                "minLength": 0,
+                "maxLength": 0
+                }}
+        }}
+        """
 
     let private handleTaskResult result =
         match result.ErrorDescription, result.Status with
@@ -215,47 +142,61 @@ module Number =
                 }
         | _ -> Ok None
 
-    let private getTaskResult key task ct =
-        fun httpClient ->
-            let request, content = createTaskResultRequest key task
-
-            let rec innerLoop attempts =
-                match attempts with
-                | 0 ->
-                    Error
-                    <| Operation {
-                        Message = "No attempts left for the Captcha API task."
-                        Code = ERROR_CODE |> Custom |> Some
-                    }
-                    |> async.Return
-                | _ ->
-                    if ct |> canceled then
-                        innerLoop 0
-                    else
-                        httpClient
-                        |> Http.Request.post request content ct
-                        |> Http.Response.String.readContent ct
-                        |> Http.Response.String.fromJson<TaskResult>
-                        |> ResultAsync.bind handleTaskResult
-                        |> ResultAsync.bindAsync (function
-                            | Some result -> result |> Ok |> async.Return
-                            | None ->
-                                async {
-                                    do! Async.Sleep 500
-                                    return! innerLoop (attempts - 1)
-                                })
-
-            innerLoop 5
-
     let fromImage ct (image: byte array) =
-        
-        let createTask key httpClient = httpClient |> createTask key image ct
-        
-        let getTaskResult key httpClient task = httpClient |> getTaskResult key task ct 
 
         let task key httpClient =
+            let model = createTaskModel key image
             httpClient
-            |> createTask key
-            |> ResultAsync.bindAsync (getTaskResult key httpClient)
+            |> createTask model ct
+            |> ResultAsync.bindAsync (fun task ->
+                (httpClient, handleTaskResult) |> getTaskResult<TaskResult, int> key task ct)
 
-        init ct task
+        init task
+
+module ReCaptcha =
+
+    module V2 =
+        type TaskResult = {
+            Success: bool
+            ChallengeTs: DateTime
+            Hostname: string
+            ErrorCodes: string option
+        }
+
+        let private createTaskModel apiKey siteKey (pageUri: Uri) =
+            $"""
+            {{
+                "clientKey": "%s{apiKey}",
+                "task": {{
+                    "type": "ReCaptchaV2TaskProxyless",
+                    "websiteURL": "%s{pageUri |> string}",
+                    "websiteKey": "%s{siteKey}"
+                }}
+            }}
+            """
+            
+        let private handleTaskResult result = 
+            match result.ErrorCodes, result.Success with
+            | Some error, _ ->
+                Error
+                <| Operation {
+                    Message = $"Captcha API has received the error '{error}'."
+                    Code = ERROR_CODE |> Custom |> Some
+                }
+            | None, true -> Ok(Some ())
+            | None, false ->
+                Error
+                <| Operation {
+                    Message = "Captcha API says that the task is not solved."
+                    Code = ERROR_CODE |> Custom |> Some
+                }
+                
+        let fromPage ct (siteKey: string) (targetUrl: Uri) = 
+            let task apiKey httpClient =
+                let model = createTaskModel apiKey siteKey targetUrl
+                httpClient
+                |> createTask model ct
+                |> ResultAsync.bindAsync (fun task ->
+                    (httpClient, handleTaskResult) |> getTaskResult<TaskResult, unit> apiKey task ct)
+
+            init task
