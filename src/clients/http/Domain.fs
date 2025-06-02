@@ -12,15 +12,6 @@ type Connection = { BaseUrl: string; Headers: Headers }
 
 type Request = { Path: string; Headers: Headers }
 
-type FormData = {
-    Payload: Map<string, string>
-} with
-
-    member this.Build() =
-        this.Payload
-        |> Seq.map (fun x -> $"{Uri.EscapeDataString x.Key}={Uri.EscapeDataString x.Value}")
-        |> String.concat "&"
-
 type Content =
     | Bytes of byte[]
     | String of
@@ -35,3 +26,9 @@ type Response<'a> = {
     StatusCode: int
     Headers: Headers
 }
+
+module FormData =
+    let build (data: Map<string, string>) =
+        data
+        |> Seq.map (fun x -> $"{Uri.EscapeDataString x.Key}={Uri.EscapeDataString x.Value}")
+        |> String.concat "&"
