@@ -1,6 +1,5 @@
 module Web.Clients.Domain.Browser
 
-open System
 open System.Collections.Concurrent
 open Microsoft.Playwright
 

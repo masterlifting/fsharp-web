@@ -43,7 +43,7 @@ let get (request: Request) (ct: CancellationToken) (client: Client) =
                 }
     }
 
-let post (request: Request) (content: RequestContent) (ct: CancellationToken) (client: Client) =
+let post (request: Request) (content: Content) (ct: CancellationToken) (client: Client) =
     async {
         try
             match client |> Headers.set request.Headers with
@@ -53,7 +53,7 @@ let post (request: Request) (content: RequestContent) (ct: CancellationToken) (c
                 let content =
                     match content with
                     | Bytes data -> new ByteArrayContent(data)
-                    | String data -> new StringContent(data.Data, data.Encoding, MediaTypeHeaderValue(data.MediaType))
+                    | String data -> new StringContent(data.Data, data.Encoding, MediaTypeHeaderValue(data.ContentType))
 
                 let! response = client.PostAsync(request.Path, content, ct) |> Async.AwaitTask
 

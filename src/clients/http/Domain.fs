@@ -8,17 +8,26 @@ type internal ClientFactory = ConcurrentDictionary<string, Client>
 
 type Headers = Map<string, string list> option
 
-type Connection = { Host: string; Headers: Headers }
+type Connection = { BaseUrl: string; Headers: Headers }
 
 type Request = { Path: string; Headers: Headers }
 
-type RequestContent =
+type FormData = {
+    Payload: Map<string, string>
+} with
+
+    member this.Build() =
+        this.Payload
+        |> Seq.map (fun x -> $"{Uri.EscapeDataString x.Key}={Uri.EscapeDataString x.Value}")
+        |> String.concat "&"
+
+type Content =
     | Bytes of byte[]
     | String of
         {|
             Data: string
             Encoding: Text.Encoding
-            MediaType: string
+            ContentType: string
         |}
 
 type Response<'a> = {

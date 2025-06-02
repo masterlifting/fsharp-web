@@ -8,11 +8,37 @@ open Web.Clients.Domain.Browser
 
 let private clients = ClientFactory()
 
+[<Literal>]
+let private userAgent =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0 Safari/537.36"
+
+[<Literal>]
+let private script =
+    """
+        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+    """
+
+let private args = [|
+    "--no-sandbox"
+    "--disable-setuid-sandbox"
+    "--disable-dev-shm-usage"
+    "--disable-accelerated-2d-canvas"
+    "--no-first-run"
+    "--no-zygote"
+    "--disable-gpu"
+    "--hide-scrollbars"
+    "--mute-audio"
+    "--disable-infobars"
+    "--disable-breakpad"
+    "--disable-web-security"
+    "--disable-extensions"
+|]
+
 let private createContext (browser: IBrowser) =
     try
         async {
-            let userAgent =
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
 
             let contextOptions =
                 BrowserNewContextOptions(
@@ -22,16 +48,9 @@ let private createContext (browser: IBrowser) =
                     UserAgent = userAgent
                 )
 
-            let! context = browser.NewContextAsync(contextOptions) |> Async.AwaitTask
+            let! context = browser.NewContextAsync contextOptions |> Async.AwaitTask
 
-            let initScripts =
-                """
-                    Object.defineProperty(navigator, 'webdriver', { get: () => false });
-                    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-                    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-                """
-
-            do! context.AddInitScriptAsync(initScripts) |> Async.AwaitTask
+            do! context.AddInitScriptAsync script |> Async.AwaitTask
 
             return context |> Ok
         }
@@ -42,43 +61,25 @@ let private createContext (browser: IBrowser) =
             Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
         }
         |> async.Return
+
 let private createBrowser browserType =
     try
         async {
             let! playwright = Playwright.CreateAsync() |> Async.AwaitTask
 
-            let userAgent =
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-
             let options =
                 BrowserTypeLaunchOptions(
                     Headless = true, // Can be true with the additional settings below
                     SlowMo = 2000.f,
-                    Args = [|
-                        "--no-sandbox"
-                        "--disable-setuid-sandbox"
-                        "--disable-dev-shm-usage"
-                        "--disable-accelerated-2d-canvas"
-                        "--no-first-run"
-                        "--no-zygote"
-                        "--disable-gpu"
-                        "--hide-scrollbars"
-                        "--mute-audio"
-                        "--disable-infobars"
-                        "--disable-breakpad"
-                        "--disable-web-security"
-                        "--disable-extensions"
-                        $"--user-agent={userAgent}"
-                    |]
+                    Args = args
                 )
 
-            let! browser =
+            return!
                 match browserType with
-                | Chromium -> playwright.Chromium.LaunchAsync(options)
-                | Firefox -> playwright.Firefox.LaunchAsync(options)
+                | Chromium -> playwright.Chromium.LaunchAsync options
+                | Firefox -> playwright.Firefox.LaunchAsync options
                 |> Async.AwaitTask
-
-            return browser |> Ok
+                |> Async.map Ok
         }
     with ex ->
         Error
@@ -87,6 +88,7 @@ let private createBrowser browserType =
             Code = (__SOURCE_DIRECTORY__, __SOURCE_FILE__, __LINE__) |> Line |> Some
         }
         |> async.Return
+
 let private cleanBrowser (client: Client) =
     async {
         try
@@ -101,6 +103,7 @@ let private cleanBrowser (client: Client) =
                 }
                 |> Error
     }
+
 let private createClient (connection: Connection) =
     connection.Browser
     |> createBrowser

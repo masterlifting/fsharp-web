@@ -42,7 +42,7 @@ let private createGetTaskResultRequest key task =
         String {|
             Data = data
             Encoding = Text.Encoding.UTF8
-            MediaType = "application/json"
+            ContentType = "application/json"
         |}
 
     request, content
@@ -70,7 +70,7 @@ let private createCreateTaskRequest key image =
         String {|
             Data = data
             Encoding = Text.Encoding.UTF8
-            MediaType = "application/json"
+            ContentType = "application/json"
         |}
 
     request, content
@@ -144,7 +144,7 @@ let solveToInt ct (image: byte array) =
             | None -> ANTI_CAPTCHA_API_KEY |> NotFound |> Error |> async.Return
             | Some key ->
                 {
-                    Host = "https://api.anti-captcha.com"
+                    BaseUrl = "https://api.anti-captcha.com"
                     Headers = None
                 }
                 |> Http.Client.init

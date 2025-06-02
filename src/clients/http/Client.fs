@@ -20,11 +20,11 @@ let private create (baseUrl: Uri) =
         }
 
 let init (connection: Connection) =
-    connection.Host
+    connection.BaseUrl
     |> Route.toUri
     |> Result.bind (fun uri ->
 
-        match clients.TryGetValue connection.Host with
+        match clients.TryGetValue connection.BaseUrl with
         | true, client -> Ok client
         | _ ->
             create uri
@@ -32,5 +32,5 @@ let init (connection: Connection) =
                 client
                 |> Headers.set connection.Headers
                 |> Result.map (fun client ->
-                    clients.TryAdd(connection.Host, client) |> ignore
+                    clients.TryAdd(connection.BaseUrl, client) |> ignore
                     client)))
