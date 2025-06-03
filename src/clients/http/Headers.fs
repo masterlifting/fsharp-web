@@ -57,7 +57,7 @@ let get (response: HttpResponseMessage) : Headers =
     with _ ->
         None
 
-let find (key: string) (patterns: string seq) (headers: Headers) =
+let find (key: string) (filter: string seq) (headers: Headers) =
     match headers with
     | None -> Error <| NotFound "Http headers"
     | Some headers ->
@@ -71,18 +71,18 @@ let find (key: string) (patterns: string seq) (headers: Headers) =
                 |> Seq.map (fun x ->
                     match x.Split ';' with
                     | [||] ->
-                        match patterns |> Seq.isEmpty with
+                        match filter |> Seq.isEmpty with
                         | true -> Some [ x ]
                         | false ->
-                            match patterns |> Seq.exists x.Contains with
+                            match filter |> Seq.exists x.Contains with
                             | true -> Some [ x ]
                             | _ -> None
                     | parts ->
-                        match patterns |> Seq.isEmpty with
+                        match filter |> Seq.isEmpty with
                         | true -> parts |> Array.toList |> Some
                         | false ->
                             parts
-                            |> Array.filter (fun x -> patterns |> Seq.exists x.Contains)
+                            |> Array.filter (fun x -> filter |> Seq.exists x.Contains)
                             |> Array.toList
                             |> Some)
                 |> Seq.choose id
@@ -90,7 +90,7 @@ let find (key: string) (patterns: string seq) (headers: Headers) =
                 |> Seq.toList
                 |> Ok
 
-let tryFind (key: string) (patterns: string seq) (headers: Headers) =
-    match find key patterns headers with
+let tryFind (key: string) (filter: string seq) (headers: Headers) =
+    match find key filter headers with
     | Ok values -> Some values
     | _ -> None

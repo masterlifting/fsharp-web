@@ -185,7 +185,7 @@ module ReCaptcha =
                         Message = $"Captcha API has received the error '{error}'."
                         Code = ERROR_CODE |> Custom |> Some
                     }
-                | None, true -> Ok(Some result.Score)
+                | None, true -> Ok(Some (result.Score |> string))
                 | None, false ->
                     Error
                     <| Operation {
@@ -193,11 +193,11 @@ module ReCaptcha =
                         Code = ERROR_CODE |> Custom |> Some
                     }
 
-            let fromPage ct (siteUrl: Uri) (siteKey: string) =
+            let fromPage ct (siteUri: Uri) (siteKey: string) =
                 init (fun apiKey httpClient ->
-                    let model = createTaskModel apiKey siteUrl siteKey
+                    let model = createTaskModel apiKey siteUri siteKey
                     httpClient
                     |> createTask model ct
                     |> ResultAsync.bindAsync (fun task ->
                         (httpClient, handleTaskResult)
-                        |> getTaskResult<TaskResult, float> apiKey task ct))
+                        |> getTaskResult<TaskResult, string> apiKey task ct))
