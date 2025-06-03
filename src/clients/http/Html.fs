@@ -1,5 +1,5 @@
 ﻿[<RequireQualifiedAccess>]
-module Web.Clients.Browser.Html
+module Web.Clients.Html
 
 open HtmlAgilityPack
 open Infrastructure.Domain

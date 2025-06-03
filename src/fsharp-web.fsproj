@@ -19,10 +19,10 @@
     <Compile Include="clients\http\Request.fs" />
     <Compile Include="clients\http\Response.fs" />
     <Compile Include="clients\http\Consumer.fs" />
+    <Compile Include="clients\http\Html.fs" />
     <Compile Include="clients\browser\Domain.fs" />
     <Compile Include="clients\browser\Client.fs" />
     <Compile Include="clients\browser\Page.fs" />
-    <Compile Include="clients\browser\Html.fs" />
     <Compile Include="AntiCaptcha.fs" />
   </ItemGroup>
   <ItemGroup>
