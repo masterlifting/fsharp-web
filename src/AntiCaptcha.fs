@@ -185,7 +185,7 @@ module ReCaptcha =
                         Message = $"Captcha API has received the error '{error}'."
                         Code = ERROR_CODE |> Custom |> Some
                     }
-                | None, true -> Ok(Some (result.Score |> string))
+                | None, true -> Ok(Some(result.Score |> string))
                 | None, false ->
                     Error
                     <| Operation {
