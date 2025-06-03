@@ -23,7 +23,7 @@
     <Compile Include="clients\browser\Client.fs" />
     <Compile Include="clients\browser\Page.fs" />
     <Compile Include="clients\browser\Html.fs" />
-    <Compile Include="Captcha.fs" />
+    <Compile Include="AntiCaptcha.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.12.1" />

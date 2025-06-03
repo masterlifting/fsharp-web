@@ -1,5 +1,5 @@
 [<RequireQualifiedAccess>]
-module Web.Captcha
+module Web.AntiCaptcha
 
 open System
 open Infrastructure
@@ -9,7 +9,7 @@ open Web.Clients
 open Web.Clients.Domain.Http
 
 [<Literal>]
-let ANTI_CAPTCHA_API_KEY = "ANTI_CAPTCHA_API_KEY"
+let private ANTI_CAPTCHA_API_KEY = "ANTI_CAPTCHA_API_KEY"
 
 [<Literal>]
 let ERROR_CODE = "CaptchaErrorCode"
@@ -33,8 +33,8 @@ let private createTask data ct =
         |> Http.Response.String.readContent ct
         |> Http.Response.String.fromJson<Task>
 
-let private getTaskResult<'i, 'o> key task ct =
-    fun (httpClient, handleResult: 'i -> Result<'o option, Error'>) ->
+let private getTaskResult<'input, 'output> key task ct =
+    fun (httpClient, handleResult: 'input -> Result<'output option, Error'>) ->
         let data =
             $"""
             {{
@@ -71,7 +71,7 @@ let private getTaskResult<'i, 'o> key task ct =
                     httpClient
                     |> Http.Request.post request content ct
                     |> Http.Response.String.readContent ct
-                    |> Http.Response.String.fromJson<'a>
+                    |> Http.Response.String.fromJson<'input>
                     |> ResultAsync.bind handleResult
                     |> ResultAsync.bindAsync (function
                         | Some result -> result |> Ok |> async.Return
@@ -119,7 +119,7 @@ module Number =
                 "math": 0,
                 "minLength": 0,
                 "maxLength": 0
-                }}
+            }}
         }}
         """
 
@@ -143,60 +143,61 @@ module Number =
         | _ -> Ok None
 
     let fromImage ct (image: byte array) =
-
-        let task key httpClient =
+        init (fun key httpClient ->
             let model = createTaskModel key image
             httpClient
             |> createTask model ct
             |> ResultAsync.bindAsync (fun task ->
-                (httpClient, handleTaskResult) |> getTaskResult<TaskResult, int> key task ct)
-
-        init task
+                (httpClient, handleTaskResult) |> getTaskResult<TaskResult, int> key task ct))
 
 module ReCaptcha =
 
-    module V2 =
-        type TaskResult = {
-            Success: bool
-            ChallengeTs: DateTime
-            Hostname: string
-            ErrorCodes: string option
-        }
+    module V3 =
+        module Enterprise =
+            type TaskResult = {
+                Success: bool
+                ChallengeTs: DateTime
+                Hostname: string
+                Action: string
+                Score: float
+                ErrorCodes: string option
+            }
 
-        let private createTaskModel apiKey siteKey (pageUri: Uri) =
-            $"""
-            {{
-                "clientKey": "%s{apiKey}",
-                "task": {{
-                    "type": "ReCaptchaV2TaskProxyless",
-                    "websiteURL": "%s{pageUri |> string}",
-                    "websiteKey": "%s{siteKey}"
+            let private createTaskModel apiKey siteUri siteKey =
+                $"""
+                {{
+                    "clientKey": "%s{apiKey}",
+                    "task": {{
+                        "type": "ReCaptchaV3TaskProxyless",
+                        "websiteURL": "%s{siteUri |> string}",
+                        "websiteKey": "%s{siteKey}",
+                        "action": "login_or_register",
+                        "isEnterprise": true
+                    }}
                 }}
-            }}
-            """
-            
-        let private handleTaskResult result = 
-            match result.ErrorCodes, result.Success with
-            | Some error, _ ->
-                Error
-                <| Operation {
-                    Message = $"Captcha API has received the error '{error}'."
-                    Code = ERROR_CODE |> Custom |> Some
-                }
-            | None, true -> Ok(Some ())
-            | None, false ->
-                Error
-                <| Operation {
-                    Message = "Captcha API says that the task is not solved."
-                    Code = ERROR_CODE |> Custom |> Some
-                }
-                
-        let fromPage ct (siteKey: string) (targetUrl: Uri) = 
-            let task apiKey httpClient =
-                let model = createTaskModel apiKey siteKey targetUrl
-                httpClient
-                |> createTask model ct
-                |> ResultAsync.bindAsync (fun task ->
-                    (httpClient, handleTaskResult) |> getTaskResult<TaskResult, unit> apiKey task ct)
+                """
 
-            init task
+            let private handleTaskResult result =
+                match result.ErrorCodes, result.Success with
+                | Some error, _ ->
+                    Error
+                    <| Operation {
+                        Message = $"Captcha API has received the error '{error}'."
+                        Code = ERROR_CODE |> Custom |> Some
+                    }
+                | None, true -> Ok(Some result.Score)
+                | None, false ->
+                    Error
+                    <| Operation {
+                        Message = "Captcha API says that the task is not solved."
+                        Code = ERROR_CODE |> Custom |> Some
+                    }
+
+            let fromPage ct (siteUrl: Uri) (siteKey: string) =
+                init (fun apiKey httpClient ->
+                    let model = createTaskModel apiKey siteUrl siteKey
+                    httpClient
+                    |> createTask model ct
+                    |> ResultAsync.bindAsync (fun task ->
+                        (httpClient, handleTaskResult)
+                        |> getTaskResult<TaskResult, float> apiKey task ct))
