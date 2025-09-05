@@ -2,14 +2,10 @@
 module Web.AntiCaptcha
 
 open System
-open Infrastructure
 open Infrastructure.Domain
 open Infrastructure.Prelude
 open Web.Clients
 open Web.Clients.Domain.Http
-
-[<Literal>]
-let private ANTI_CAPTCHA_API_KEY = "ANTI_CAPTCHA_API_KEY"
 
 [<Literal>]
 let ERROR_CODE = "CaptchaErrorCode"
@@ -85,16 +81,12 @@ let private getTaskResult<'input, 'output> key task ct =
 
 let private init =
     fun createTask ->
-        Configuration.Client.tryGetEnv ANTI_CAPTCHA_API_KEY None
-        |> ResultAsync.wrap (function
-            | None -> ANTI_CAPTCHA_API_KEY |> NotFound |> Error |> async.Return
-            | Some key ->
-                {
-                    BaseUrl = "https://api.anti-captcha.com"
-                    Headers = None
-                }
-                |> Http.Client.init
-                |> ResultAsync.wrap (createTask key))
+        {
+            BaseUrl = "https://api.anti-captcha.com"
+            Headers = None
+        }
+        |> Http.Client.init
+        |> ResultAsync.wrap createTask
 
 module Number =
 
@@ -142,17 +134,19 @@ module Number =
                 }
         | _ -> Ok None
 
-    let fromImage ct (image: byte array) =
-        init (fun key httpClient ->
-            let model = createTaskModel key image
+    let fromImage ct apiKey (image: byte array) =
+        init (fun httpClient ->
+            let model = createTaskModel apiKey image
+
             httpClient
             |> createTask model ct
             |> ResultAsync.bindAsync (fun task ->
-                (httpClient, handleTaskResult) |> getTaskResult<TaskResult, int> key task ct))
+                (httpClient, handleTaskResult) |> getTaskResult<TaskResult, int> apiKey task ct))
 
 module ReCaptcha =
 
     module V3 =
+        
         module Enterprise =
             type TaskResult = {
                 Success: bool
@@ -193,8 +187,8 @@ module ReCaptcha =
                         Code = ERROR_CODE |> Custom |> Some
                     }
 
-            let fromPage ct (siteUri: Uri) (siteKey: string) =
-                init (fun apiKey httpClient ->
+            let fromPage ct apiKey (siteUri: Uri) (siteKey: string) =
+                init (fun httpClient ->
                     let model = createTaskModel apiKey siteUri siteKey
                     httpClient
                     |> createTask model ct
