@@ -146,7 +146,7 @@ module Number =
 module ReCaptcha =
 
     module V3 =
-        
+
         module Enterprise =
             type TaskResult = {
                 Success: bool
