@@ -14,9 +14,6 @@ module Dto =
 
     type Exists = { Selector: string }
 
-    type Extract = {
-        Selector: string
-        Attribute: string option
-    }
+    type Extract = { Selector: string }
 
     type Execute = { Selector: string; Function: string }

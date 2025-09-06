@@ -157,7 +157,7 @@ module Tab =
                         ))
 
         /// <summary>
-        /// Extracts data from an element in the specified tab
+        /// Extracts text content from an element in the specified tab
         /// </summary>
         /// <param name="tabId">The ID of the tab</param>
         /// <param name="dto">The extract request data containing the selector and optional attribute</param>
@@ -178,7 +178,12 @@ module Tab =
                         Encoding = Text.Encoding.UTF8
                         ContentType = "application/json"
                     |}
-                client |> Request.post request content ct |> Response.String.readContent ct
+                client 
+                |> Request.post request content ct 
+                |> Response.String.readContent ct 
+                |> ResultAsync.map (function
+                    | "" -> None
+                    | value -> Some value)
 
         /// <summary>
         /// Executes JavaScript code on an element in the specified tab
