@@ -83,3 +83,37 @@ let post (request: Request) (content: Content) (ct: CancellationToken) (client: 
                     Code = None
                 }
     }
+
+let delete (request: Request) (ct: CancellationToken) (client: Client) =
+    async {
+        try
+            match client |> Headers.set request.Headers with
+            | Error error -> return Error error
+            | Ok client ->
+                let! response = client.DeleteAsync(request.Path, ct) |> Async.AwaitTask
+
+                match response.IsSuccessStatusCode with
+                | true -> return Ok response
+                | false ->
+                    let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+
+                    let createError reason =
+                        Error
+                        <| Operation {
+                            Message =
+                                $"'{client.BaseAddress}{request.Path}' has received the error: '%s{responseContent}'. Reason: '%s{reason}'"
+                            Code = response.StatusCode |> Http |> Some
+                        }
+
+                    return
+                        match response.ReasonPhrase with
+                        | null -> "Unknown 'response.ReasonPhrase'" |> createError
+                        | reasonPhrase -> reasonPhrase |> createError
+        with ex ->
+            return
+                Error
+                <| Operation {
+                    Message = $"'{client.BaseAddress}{request.Path}' {ex |> Exception.toMessage}"
+                    Code = None
+                }
+    }

@@ -28,5 +28,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\fsharp-infrastructure\src\fsharp-infrastructure.fsproj" />
+    <Compile Include="clients\browser-webapi\Domain.fs" />
+    <Compile Include="clients\browser-webapi\Client.fs" />
+    <Compile Include="clients\browser-webapi\Request.fs" />
   </ItemGroup>
 </Project>
