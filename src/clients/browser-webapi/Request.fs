@@ -178,9 +178,9 @@ module Tab =
                         Encoding = Text.Encoding.UTF8
                         ContentType = "application/json"
                     |}
-                client 
-                |> Request.post request content ct 
-                |> Response.String.readContent ct 
+                client
+                |> Request.post request content ct
+                |> Response.String.readContent ct
                 |> ResultAsync.map (function
                     | "" -> None
                     | value -> Some value)
