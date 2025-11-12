@@ -5,6 +5,6 @@ open Web.Clients
 
 let init (connection: Connection) =
     Http.Client.init {
-        BaseUrl = connection.BaseUrl + "/api/v1"
+        BaseUrl = connection.BaseUrl + "/api/v1/"
         Headers = None
     }

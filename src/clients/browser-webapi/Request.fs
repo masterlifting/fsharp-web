@@ -2,6 +2,7 @@
 module Web.Clients.BrowserWebApi.Request
 
 open System
+open System.Text.Json
 open System.Threading
 open Infrastructure.Domain
 open Infrastructure.Prelude
@@ -9,6 +10,9 @@ open Infrastructure.SerDe
 open Web.Clients.Http
 open Web.Clients.Domain.Http
 open Web.Clients.Domain.BrowserWebApi
+
+let private jsonOptions =
+    JsonSerializerOptions(PropertyNamingPolicy = JsonNamingPolicy.CamelCase)
 
 module Tab =
 
@@ -21,11 +25,11 @@ module Tab =
     /// <returns>Async result with the tab ID as string</returns>
     let open' (dto: Dto.Open) (ct: CancellationToken) (client: Client) =
 
-        match dto |> Json.serialize with
+        match dto |> Json.serialize' jsonOptions with
         | Error e -> Error e |> async.Return
         | Ok data ->
 
-            let request = { Path = "/tab/open"; Headers = None }
+            let request = { Path = "tab/open"; Headers = None }
             let content =
                 String {|
                     Data = data
@@ -44,7 +48,7 @@ module Tab =
     /// <returns>Async result with unit</returns>
     let close (tabId: string) (ct: CancellationToken) (client: Client) =
         let request = {
-            Path = $"/tabs/{tabId}/close"
+            Path = $"tabs/{tabId}/close"
             Headers = None
         }
         client |> Request.delete request ct |> Response.Unit.read
@@ -58,11 +62,11 @@ module Tab =
     /// <param name="client">HTTP client</param>
     /// <returns>Async result with unit</returns>
     let fill (tabId: string) (dto: Dto.Fill) (ct: CancellationToken) (client: Client) =
-        match dto |> Json.serialize with
+        match dto |> Json.serialize' jsonOptions with
         | Error e -> Error e |> async.Return
         | Ok data ->
             let request = {
-                Path = $"/tabs/{tabId}/fill"
+                Path = $"tabs/{tabId}/fill"
                 Headers = None
             }
             let content =
@@ -82,7 +86,7 @@ module Tab =
     /// <returns>Async result with unit</returns>
     let humanize (tabId: string) (ct: CancellationToken) (client: Client) =
         let request = {
-            Path = $"/tabs/{tabId}/humanize"
+            Path = $"tabs/{tabId}/humanize"
             Headers = None
         }
         let content =
@@ -104,11 +108,11 @@ module Tab =
         /// <param name="client">HTTP client</param>
         /// <returns>Async result with unit</returns>
         let click (tabId: string) (dto: Dto.Click) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize with
+            match dto |> Json.serialize' jsonOptions with
             | Error e -> Error e |> async.Return
             | Ok data ->
                 let request = {
-                    Path = $"/tabs/{tabId}/element/click"
+                    Path = $"tabs/{tabId}/element/click"
                     Headers = None
                 }
                 let content =
@@ -128,11 +132,11 @@ module Tab =
         /// <param name="client">HTTP client</param>
         /// <returns>Async result with boolean indicating existence</returns>
         let exists (tabId: string) (dto: Dto.Exists) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize with
+            match dto |> Json.serialize' jsonOptions with
             | Error e -> Error e |> async.Return
             | Ok data ->
                 let request = {
-                    Path = $"/tabs/{tabId}/element/exists"
+                    Path = $"tabs/{tabId}/element/exists"
                     Headers = None
                 }
                 let content =
@@ -165,11 +169,11 @@ module Tab =
         /// <param name="client">HTTP client</param>
         /// <returns>Async result with the extracted data as string</returns>
         let extract (tabId: string) (dto: Dto.Extract) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize with
+            match dto |> Json.serialize' jsonOptions with
             | Error e -> Error e |> async.Return
             | Ok data ->
                 let request = {
-                    Path = $"/tabs/{tabId}/element/extract"
+                    Path = $"tabs/{tabId}/element/extract"
                     Headers = None
                 }
                 let content =
@@ -194,11 +198,11 @@ module Tab =
         /// <param name="client">HTTP client</param>
         /// <returns>Async result with unit</returns>
         let execute (tabId: string) (dto: Dto.Execute) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize with
+            match dto |> Json.serialize' jsonOptions with
             | Error e -> Error e |> async.Return
             | Ok data ->
                 let request = {
-                    Path = $"/tabs/{tabId}/element/execute"
+                    Path = $"tabs/{tabId}/element/execute"
                     Headers = None
                 }
                 let content =
