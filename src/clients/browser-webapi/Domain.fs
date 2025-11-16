@@ -16,4 +16,7 @@ module Dto =
 
     type Extract = { Selector: string }
 
-    type Execute = { Selector: string; Function: string }
+    type Execute = {
+        Selector: string option
+        Function: string
+    }
