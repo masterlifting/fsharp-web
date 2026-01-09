@@ -4,7 +4,7 @@ type Connection = { BaseUrl: string }
 
 module Dto =
 
-    type Open = { Url: string }
+    type Open = { Url: string; Expiration: uint64 } // Expiration in seconds
 
     type Input = { Selector: string; Value: string }
 
