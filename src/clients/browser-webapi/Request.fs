@@ -43,6 +43,20 @@ module Tab =
             client |> Request.post request content ct |> Response.String.readContent ct
 
     /// <summary>
+    /// Returns a PNG screenshot of the specified tab
+    /// </summary>
+    /// <param name="tabId">The ID of the tab</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <param name="client">HTTP client</param>
+    /// <returns>Async result with screenshot bytes (PNG)</returns>
+    let screenshot (tabId: string) (ct: CancellationToken) (client: Client) =
+        let request = {
+            Path = $"api/v1/tabs/{tabId}/screenshot"
+            Headers = None
+        }
+        client |> Request.get request ct |> Response.Bytes.readContent ct
+
+    /// <summary>
     /// Closes the specified browser tab
     /// </summary>
     /// <param name="tabId">The ID of the tab to close</param>
@@ -103,13 +117,13 @@ module Tab =
     module Element =
 
         /// <summary>
-        /// Clicks an element in the specified tab
+        /// Clicks an element in the specified tab and returns the response text (page title if provided)
         /// </summary>
         /// <param name="tabId">The ID of the tab</param>
         /// <param name="dto">The click request data containing the selector</param>
         /// <param name="ct">Cancellation token</param>
         /// <param name="client">HTTP client</param>
-        /// <returns>Async result with unit</returns>
+        /// <returns>Async result with response text</returns>
         let click (tabId: string) (dto: Dto.Click) (ct: CancellationToken) (client: Client) =
             match dto |> Json.serialize' options with
             | Error e -> Error e |> async.Return
@@ -124,7 +138,7 @@ module Tab =
                         Encoding = Text.Encoding.UTF8
                         ContentType = "application/json"
                     |}
-                client |> Request.post request content ct |> Response.Unit.read
+                client |> Request.post request content ct |> Response.String.readContent ct
 
         /// <summary>
         /// Checks if an element exists in the specified tab
@@ -199,7 +213,7 @@ module Tab =
         /// <param name="dto">The execute request data containing the selector and function</param>
         /// <param name="ct">Cancellation token</param>
         /// <param name="client">HTTP client</param>
-        /// <returns>Async result with unit</returns>
+        /// <returns>Async result with response text (e.g. "unit")</returns>
         let execute (tabId: string) (dto: Dto.Execute) (ct: CancellationToken) (client: Client) =
             match dto |> Json.serialize' options with
             | Error e -> Error e |> async.Return
@@ -214,4 +228,4 @@ module Tab =
                         Encoding = Text.Encoding.UTF8
                         ContentType = "application/json"
                     |}
-                client |> Request.post request content ct |> Response.Unit.read
+                client |> Request.post request content ct |> Response.String.readContent ct
