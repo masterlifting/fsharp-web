@@ -114,118 +114,116 @@ module Tab =
             |}
         client |> Request.post request content ct |> Response.Unit.read
 
-    module Element =
+    /// <summary>
+    /// Clicks an element in the specified tab and returns the response text (page title if provided)
+    /// </summary>
+    /// <param name="tabId">The ID of the tab</param>
+    /// <param name="dto">The click request data containing the selector</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <param name="client">HTTP client</param>
+    /// <returns>Async result with response text</returns>
+    let click (tabId: string) (dto: Dto.Click) (ct: CancellationToken) (client: Client) =
+        match dto |> Json.serialize' options with
+        | Error e -> Error e |> async.Return
+        | Ok data ->
+            let request = {
+                Path = $"api/v1/tabs/{tabId}/click"
+                Headers = None
+            }
+            let content =
+                String {|
+                    Data = data
+                    Encoding = Text.Encoding.UTF8
+                    ContentType = "application/json"
+                |}
+            client |> Request.post request content ct |> Response.String.readContent ct
 
-        /// <summary>
-        /// Clicks an element in the specified tab and returns the response text (page title if provided)
-        /// </summary>
-        /// <param name="tabId">The ID of the tab</param>
-        /// <param name="dto">The click request data containing the selector</param>
-        /// <param name="ct">Cancellation token</param>
-        /// <param name="client">HTTP client</param>
-        /// <returns>Async result with response text</returns>
-        let click (tabId: string) (dto: Dto.Click) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize' options with
-            | Error e -> Error e |> async.Return
-            | Ok data ->
-                let request = {
-                    Path = $"api/v1/tabs/{tabId}/element/click"
-                    Headers = None
-                }
-                let content =
-                    String {|
-                        Data = data
-                        Encoding = Text.Encoding.UTF8
-                        ContentType = "application/json"
-                    |}
-                client |> Request.post request content ct |> Response.String.readContent ct
+    /// <summary>
+    /// Checks if an element exists in the specified tab
+    /// </summary>
+    /// <param name="tabId">The ID of the tab</param>
+    /// <param name="dto">The exists request data containing the selector</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <param name="client">HTTP client</param>
+    /// <returns>Async result with boolean indicating existence</returns>
+    let exists (tabId: string) (dto: Dto.Exists) (ct: CancellationToken) (client: Client) =
+        match dto |> Json.serialize' options with
+        | Error e -> Error e |> async.Return
+        | Ok data ->
+            let request = {
+                Path = $"api/v1/tabs/{tabId}/exists"
+                Headers = None
+            }
+            let content =
+                String {|
+                    Data = data
+                    Encoding = Text.Encoding.UTF8
+                    ContentType = "application/json"
+                |}
+            client
+            |> Request.post request content ct
+            |> Response.String.readContent ct
+            |> ResultAsync.bind (fun res ->
+                match res with
+                | "true" -> Ok true
+                | "false" -> Ok false
+                | other ->
+                    Error(
+                        Operation {
+                            Message = $"Unexpected response: {other}"
+                            Code = None
+                        }
+                    ))
 
-        /// <summary>
-        /// Checks if an element exists in the specified tab
-        /// </summary>
-        /// <param name="tabId">The ID of the tab</param>
-        /// <param name="dto">The exists request data containing the selector</param>
-        /// <param name="ct">Cancellation token</param>
-        /// <param name="client">HTTP client</param>
-        /// <returns>Async result with boolean indicating existence</returns>
-        let exists (tabId: string) (dto: Dto.Exists) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize' options with
-            | Error e -> Error e |> async.Return
-            | Ok data ->
-                let request = {
-                    Path = $"api/v1/tabs/{tabId}/element/exists"
-                    Headers = None
-                }
-                let content =
-                    String {|
-                        Data = data
-                        Encoding = Text.Encoding.UTF8
-                        ContentType = "application/json"
-                    |}
-                client
-                |> Request.post request content ct
-                |> Response.String.readContent ct
-                |> ResultAsync.bind (fun res ->
-                    match res with
-                    | "true" -> Ok true
-                    | "false" -> Ok false
-                    | other ->
-                        Error(
-                            Operation {
-                                Message = $"Unexpected response: {other}"
-                                Code = None
-                            }
-                        ))
+    /// <summary>
+    /// Extracts text content from an element in the specified tab
+    /// </summary>
+    /// <param name="tabId">The ID of the tab</param>
+    /// <param name="dto">The extract request data containing the selector</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <param name="client">HTTP client</param>
+    /// <returns>Async result with the extracted data as string</returns>
+    let extract (tabId: string) (dto: Dto.Extract) (ct: CancellationToken) (client: Client) =
+        match dto |> Json.serialize' options with
+        | Error e -> Error e |> async.Return
+        | Ok data ->
+            let request = {
+                Path = $"api/v1/tabs/{tabId}/extract"
+                Headers = None
+            }
+            let content =
+                String {|
+                    Data = data
+                    Encoding = Text.Encoding.UTF8
+                    ContentType = "application/json"
+                |}
+            client
+            |> Request.post request content ct
+            |> Response.String.readContent ct
+            |> ResultAsync.map (function
+                | "" -> None
+                | value -> Some value)
 
-        /// <summary>
-        /// Extracts text content from an element in the specified tab
-        /// </summary>
-        /// <param name="tabId">The ID of the tab</param>
-        /// <param name="dto">The extract request data containing the selector and optional attribute</param>
-        /// <param name="ct">Cancellation token</param>
-        /// <param name="client">HTTP client</param>
-        /// <returns>Async result with the extracted data as string</returns>
-        let extract (tabId: string) (dto: Dto.Extract) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize' options with
-            | Error e -> Error e |> async.Return
-            | Ok data ->
-                let request = {
-                    Path = $"api/v1/tabs/{tabId}/element/extract"
-                    Headers = None
-                }
-                let content =
-                    String {|
-                        Data = data
-                        Encoding = Text.Encoding.UTF8
-                        ContentType = "application/json"
-                    |}
-                client
-                |> Request.post request content ct
-                |> Response.String.readContent ct
-                |> ResultAsync.map (function
-                    | "" -> None
-                    | value -> Some value)
-
-        /// <summary>
-        /// Executes JavaScript code on a tab or an element in the specified tab
-        /// </summary>
-        /// <param name="tabId">The ID of the tab</param>
-        /// <param name="dto">The execute request data containing the selector and function</param>
-        /// <param name="ct">Cancellation token</param>
-        /// <param name="client">HTTP client</param>
-        /// <returns>Async result with response text (e.g. "unit")</returns>
-        let execute (tabId: string) (dto: Dto.Execute) (ct: CancellationToken) (client: Client) =
-            match dto |> Json.serialize' options with
-            | Error e -> Error e |> async.Return
-            | Ok data ->
-                let request = {
-                    Path = $"api/v1/tabs/{tabId}/element/execute"
-                    Headers = None
-                }
-                let content =
-                    String {|
-                        Data = data
-                        Encoding = Text.Encoding.UTF8
-                        ContentType = "application/json"
-                    |}
-                client |> Request.post request content ct |> Response.String.readContent ct
+    /// <summary>
+    /// Executes JavaScript code on a tab or an element in the specified tab
+    /// </summary>
+    /// <param name="tabId">The ID of the tab</param>
+    /// <param name="dto">The execute request data containing the selector and function</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <param name="client">HTTP client</param>
+    /// <returns>Async result with response text (e.g. "unit")</returns>
+    let execute (tabId: string) (dto: Dto.Execute) (ct: CancellationToken) (client: Client) =
+        match dto |> Json.serialize' options with
+        | Error e -> Error e |> async.Return
+        | Ok data ->
+            let request = {
+                Path = $"api/v1/tabs/{tabId}/execute"
+                Headers = None
+            }
+            let content =
+                String {|
+                    Data = data
+                    Encoding = Text.Encoding.UTF8
+                    ContentType = "application/json"
+                |}
+            client |> Request.post request content ct |> Response.String.readContent ct
